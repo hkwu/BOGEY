@@ -2,24 +2,24 @@ import random
 import libtcodpy as libt
 
 # Consts
-SCREEN_WIDTH = 150
-SCREEN_HEIGHT = 20
-MAP_WIDTH = int(0.7 * SCREEN_WIDTH)
-MAP_HEIGHT = SCREEN_HEIGHT
+SCREEN_WIDTH = 180
+SCREEN_HEIGHT = 100
+MAP_WIDTH = SCREEN_WIDTH
+MAP_HEIGHT = int(0.7 * SCREEN_HEIGHT)
 
 # Colours
-COLOUR_WALL = libt.Color(0, 0, 100)
+COLOUR_WALL = libt.black
 COLOUR_GROUND = libt.black
 
 # Room data
-ROOM_MAX_SIZE = 10
+ROOM_MAX_SIZE = 25
 ROOM_MIN_SIZE = 2
-MAX_ROOMS = 30
+MAX_ROOMS = 50
 
 # Set the fonts, initialize window
-libt.console_set_custom_font("terminal16x16_gs_ro.png", 
-                                  libt.FONT_TYPE_GREYSCALE 
-                                  | libt.FONT_LAYOUT_TCOD)
+libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
+                             libt.FONT_TYPE_GREYSCALE 
+                             | libt.FONT_LAYOUT_TCOD)
 libt.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, "Bogue", False)
 
 # scrn-screen consoles
@@ -146,9 +146,9 @@ def render_obj():
             fog = world[i][j].fog
 
             if fog:
-                libt.console_set_char_background(scrn, i, j, COLOUR_WALL, libt.BKGND_SET)
+                libt.console_put_char_ex(scrn, i, j, "#", COLOUR_WALL, libt.white)
             else:
-                libt.console_set_char_background(scrn, i, j, COLOUR_GROUND, libt.BKGND_SET)
+                libt.console_put_char_ex(scrn, i, j, ".", COLOUR_GROUND, libt.white)
 
     for obj in objects:
         obj.draw()
@@ -174,7 +174,7 @@ def keybinds():
         player.move(1, 0)
 
 # Class instances
-player = Entity(54, 6, "@", libt.white)
+player = Entity(54, 6, "@", libt.black)
 npc = Entity(MAP_WIDTH / 2 + 2, MAP_HEIGHT / 2 + 2, "@", libt.yellow)
 objects = [player]
 
