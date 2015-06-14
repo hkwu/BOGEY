@@ -10,10 +10,10 @@ MAP_HEIGHT = int(0.7 * SCREEN_HEIGHT)
 # Colours
 COLOURS = {
     'bg': libt.white,
-    'wall': libt.Color(164, 164, 164),
+    'wall': libt.Color(160, 160, 160),
     'lit_wall': libt.Color(173, 173, 0),
-    'ground': libt.Color(21, 21, 21),
-    'lit_ground': libt.Color(160, 160, 160),
+    'ground': libt.Color(160, 160, 160),
+    'lit_ground': libt.Color(21, 21, 21),
     'text': libt.Color(164, 164, 164)
 }
 
@@ -213,11 +213,9 @@ def render_obj():
                                                  COLOURS['lit_ground'], COLOURS['bg'])
                 elif world[i][j].seen:
                     if fog:
-                        # libt.console_put_char_ex(sketch1, i, j, "#", COLOURS['wall'], COLOURS['bg'])
                         libt.console_put_char_ex(sketch1, i, j, "#", 
                                                  COLOURS['wall'], COLOURS['bg'])
                     else:
-                        # libt.console_put_char_ex(sketch1, i, j, ".", COLOURS['ground'], COLOURS['bg'])
                         libt.console_put_char_ex(sketch1, i, j, ".", 
                                                  COLOURS['ground'], COLOURS['bg'])
 
@@ -250,7 +248,7 @@ def keybinds():
         player.move(1, 0)
 
 # Class instances
-player = Entity(54, 6, "@", libt.black)
+player = Entity(0, 0, "@", libt.black)
 npc = Entity(MAP_WIDTH / 2 + 2, MAP_HEIGHT / 2 + 2, "@", libt.yellow)
 objects = [player]
 
