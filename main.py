@@ -1,11 +1,7 @@
 import random
 import libtcodpy as libt
-
-# Consts
-SCREEN_WIDTH = 180
-SCREEN_HEIGHT = 100
-MAP_WIDTH = SCREEN_WIDTH
-MAP_HEIGHT = int(0.7 * SCREEN_HEIGHT)
+import tiles
+import config
 
 # Colours
 COLOURS = {
@@ -14,47 +10,26 @@ COLOURS = {
     'lit_wall': libt.Color(173, 173, 0),
     'ground': libt.Color(160, 160, 160),
     'lit_ground': libt.Color(21, 21, 21),
+    'player': libt.black,
+    'mob': libt.Color(255, 0, 0),
     'text': libt.Color(164, 164, 164)
 }
-
-# Room data
-ROOM_MAX_SIZE = 25
-ROOM_MIN_SIZE = 5
-MAX_ROOMS = 50
-
-# FOV
-FOV = 0
-FOV_LIT_WALLS = True
-LIGHT_RANGE = 10
-fov_refresh = True
-
-# Set the fonts, initialize window
-libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
-                             libt.FONT_TYPE_GREYSCALE 
-                             | libt.FONT_LAYOUT_TCOD)
-libt.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, "Bogey", False)
-
-# Keypress delay
-libt.console_set_keyboard_repeat(50, 100)
-
-# Screen consoles
-sketch1 = libt.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 
 # Classes
 class Entity(object):
-    def __init__(self, x, y, char, colour):
+    def __init__(self, x, y, name, char, colour, solid=False):
         self.x = x
         self.y = y
+        self.name = name
         self.char = char
         self.colour = colour
+        self.solid = solid
 
     def move(self, dx, dy):
-        if self.x + dx >= 0 and self.x + dx < MAP_WIDTH \
-           and world[self.x + dx][self.y].passable:
+        if not is_solid(self.x + dx, self.y):
             self.x += dx
-        if self.y + dy >= 0 and self.y + dy < MAP_HEIGHT \
-           and world[self.x][self.y + dy].passable:
+        if not is_solid(self.x, self.y + dy):
             self.y += dy
 
     def draw(self):
@@ -66,33 +41,24 @@ class Entity(object):
         libt.console_put_char(sketch1, self.x, self.y, " ", libt.BKGND_NONE)
 
 
-class Tile(object):
-    def __init__(self, passable, fog=False, seen=False):
-        self.passable = passable
-
-        if not fog:
-            fog = not passable
-
-        self.fog = fog
-        self.seen = seen
+class Player(Entity):
+    def __init__(self, x, y, name):
+        Entity.__init__(self, x, y, name, "@", COLOURS['player'], True)
 
 
-class Block(object):
-    def __init__(self, x, y, w, h):
-        self.x1 = x
-        self.y1 = y
-        self.x2 = x + w
-        self.y2 = y + h
+class Mob(Entity):
+    def __init__(self, x, y, name, char):
+        Entity.__init__(self, x, y, name, char, COLOURS['mob'], True)
 
-    def centre(self):
-        centre_x = (self.x1 + self.x2) / 2
-        centre_y = (self.y1 + self.y2) / 2
 
-        return (centre_x, centre_y)
+class Spider(Mob):
+    def __init__(self, x, y):
+        Mob.__init__(self, x, y, "Spider", "s")
 
-    def intersect(self, block):
-        return (self.x1 <= block.x2 and self.x2 >= block.x1
-                and self.y1 <= block.y2 and self.y2 >= block.y1)
+
+class Skeleton(Mob):
+    def __init__(self, x, y):
+        Mob.__init__(self, x, y, "Skeleton", "S")
 
 
 # Map creation functions
@@ -102,23 +68,23 @@ def make_map():
     world = []
 
     # Initialize the multi-dimensional array with unpassable tiles
-    for i in range(MAP_WIDTH):
+    for i in range(config.MAP_WIDTH):
         world.append([])
-        for j in range(MAP_HEIGHT):
-            world[i].append(Tile(False))
+        for j in range(config.MAP_HEIGHT):
+            world[i].append(tiles.Tile(False))
 
     rooms = []
     num_rooms = 0
 
     # Fill array with passable tiles that represent up to MAX_ROOMS
     # number of rooms
-    for num in range(MAX_ROOMS):
-        w = random.randrange(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-        h = random.randrange(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-        x = random.randrange(MAP_WIDTH - w - 1)
-        y = random.randrange(MAP_HEIGHT - h - 1)
+    for num in range(config.MAX_ROOMS):
+        w = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
+        h = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
+        x = random.randrange(config.MAP_WIDTH - w - 1)
+        y = random.randrange(config.MAP_HEIGHT - h - 1)
 
-        new = Block(x, y, w, h)
+        new = tiles.Room(x, y, w, h)
         intersected = False
 
         # Check for overlaps, stop if room overlaps old ones
@@ -137,10 +103,12 @@ def make_map():
             num_rooms += 1
             rooms.append(new)
             make_room(new)
+            add_entities(new)
         elif not intersected:
             num_rooms += 1
             rooms.append(new)
             make_room(new)
+            add_entities(new)
             connect_rooms(rooms[num_rooms - 2], rooms[num_rooms - 1])
 
 
@@ -180,7 +148,7 @@ def connect_rooms(room1, room2):
 
 
 def make_room(room):
-    """Takes an instance of a Room and creates it on the game world."""
+    """Takes an instance of a tiles.Room and creates it on the game world."""
     global world
 
     for i in range(room.x1 + 1, room.x2):
@@ -189,16 +157,42 @@ def make_room(room):
             world[i][j].fog = False
 
 
+# Entity functions
+def is_solid(x, y):
+    """Determines if tile/entity at (x, y) is solid."""
+    if not world[x][y].passable:
+        return True
+    
+    for obj in objects:
+        if obj.solid and obj.x == x and obj.y == y:
+            return True
+
+    return False
+
+
+def add_entities(room):
+    """Adds random entities to a room."""
+    entity_x = random.randrange(room.x1 + 1, room.x2)
+    entity_y = random.randrange(room.y1 + 1, room.y2)
+    mob = random.randrange(10)
+
+    if mob == 0:
+        objects.append(Spider(entity_x, entity_y))
+    elif mob == 1:
+        objects.append(Skeleton(entity_x, entity_y))
+
+
 # Other functions
 def render_obj():
+    """Places objects and tiles on the console display."""
     if fov_refresh:
         global fov_refresh
         fov_refresh = False
         libt.map_compute_fov(fov_map, player.x, player.y, 
-                             LIGHT_RANGE, FOV_LIT_WALLS, FOV)
+                             config.LIGHT_RANGE, config.FOV_LIT_WALLS, config.FOV)
 
-        for i in range(MAP_WIDTH):
-            for j in range(MAP_HEIGHT):
+        for i in range(config.MAP_WIDTH):
+            for j in range(config.MAP_HEIGHT):
                 fog = world[i][j].fog
                 visible = libt.map_is_in_fov(fov_map, i, j)
 
@@ -222,10 +216,11 @@ def render_obj():
     for obj in objects:
         obj.draw()
 
-    libt.console_blit(sketch1, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0)
+    libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 0, 0, 0)
 
 
 def keybinds():
+    """Handles keyboard input from the user."""
     global fov_refresh
     key = libt.console_wait_for_keypress(True)
 
@@ -248,16 +243,32 @@ def keybinds():
         player.move(1, 0)
 
 # Class instances
-player = Entity(0, 0, "@", libt.black)
-npc = Entity(MAP_WIDTH / 2 + 2, MAP_HEIGHT / 2 + 2, "@", libt.yellow)
+player = Player(0, 0, "Player")
+
+# Map objects
 objects = [player]
 
-make_map()
-fov_map = libt.map_new(MAP_WIDTH, MAP_HEIGHT)
+# Set the font, initialize window
+libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
+                             libt.FONT_TYPE_GREYSCALE 
+                             | libt.FONT_LAYOUT_TCOD)
+libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, "Bogey", False)
 
-for i in range(MAP_WIDTH):
-    for j in range(MAP_HEIGHT):
-        libt.map_set_properties(fov_map, i, j, not world[i][j].fog, world[i][j].passable)
+# Keypress delay
+libt.console_set_keyboard_repeat(50, 100)
+
+# Screen consoles
+sketch1 = libt.console_new(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
+# Begin initialization
+fov_refresh = True
+fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+make_map()
+
+for i in range(config.MAP_WIDTH):
+    for j in range(config.MAP_HEIGHT):
+        libt.map_set_properties(fov_map, i, j, 
+                                not world[i][j].fog, world[i][j].passable)
 
 # Main loop
 while not libt.console_is_window_closed():
