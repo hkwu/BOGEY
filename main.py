@@ -35,7 +35,8 @@ class Entity(object):
     def draw(self):
         if libt.map_is_in_fov(fov_map, self.x, self.y):
             libt.console_set_default_foreground(sketch1, self.colour)
-            libt.console_put_char(sketch1, self.x, self.y, self.char, libt.BKGND_NONE)
+            libt.console_put_char(sketch1, self.x, self.y, 
+                                  self.char, libt.BKGND_NONE)
 
     def clear(self):
         libt.console_put_char(sketch1, self.x, self.y, " ", libt.BKGND_NONE)
@@ -189,7 +190,8 @@ def render_obj():
         global fov_refresh
         fov_refresh = False
         libt.map_compute_fov(fov_map, player.x, player.y, 
-                             config.LIGHT_RANGE, config.FOV_LIT_WALLS, config.FOV)
+                             config.LIGHT_RANGE, config.FOV_LIT_WALLS, 
+                             config.FOV)
 
         for i in range(config.MAP_WIDTH):
             for j in range(config.MAP_HEIGHT):
@@ -201,22 +203,27 @@ def render_obj():
 
                     if fog:
                         libt.console_put_char_ex(sketch1, i, j, "#",
-                                                 COLOURS['lit_wall'], COLOURS['bg'])
+                                                 COLOURS['lit_wall'], 
+                                                 COLOURS['bg'])
                     else:
                         libt.console_put_char_ex(sketch1, i, j, ".",
-                                                 COLOURS['lit_ground'], COLOURS['bg'])
+                                                 COLOURS['lit_ground'], 
+                                                 COLOURS['bg'])
                 elif world[i][j].seen:
                     if fog:
                         libt.console_put_char_ex(sketch1, i, j, "#", 
-                                                 COLOURS['wall'], COLOURS['bg'])
+                                                 COLOURS['wall'], 
+                                                 COLOURS['bg'])
                     else:
                         libt.console_put_char_ex(sketch1, i, j, ".", 
-                                                 COLOURS['ground'], COLOURS['bg'])
+                                                 COLOURS['ground'], 
+                                                 COLOURS['bg'])
 
     for obj in objects:
         obj.draw()
 
-    libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 0, 0, 0)
+    libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, 
+                      config.SCREEN_HEIGHT, 0, 0, 0)
 
 
 def keybinds():
@@ -252,7 +259,8 @@ objects = [player]
 libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
                              libt.FONT_TYPE_GREYSCALE 
                              | libt.FONT_LAYOUT_TCOD)
-libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, "Bogey", False)
+libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
+                       "Bogey", False)
 
 # Keypress delay
 libt.console_set_keyboard_repeat(50, 100)
