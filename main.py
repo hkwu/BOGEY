@@ -39,7 +39,9 @@ class Entity(object):
                                   self.char, libt.BKGND_NONE)
 
     def clear(self):
-        libt.console_put_char(sketch1, self.x, self.y, " ", libt.BKGND_NONE)
+        if libt.map_is_in_fov(fov_map, self.x, self.y):
+            libt.console_put_char(sketch1, self.x, self.y, 
+                                  " ", libt.BKGND_NONE)
 
 
 class Player(Entity):
@@ -149,7 +151,7 @@ def connect_rooms(room1, room2):
 
 
 def make_room(room):
-    """Takes an instance of a tiles.Room and creates it on the game world."""
+    """Takes an instance of a Room and creates it on the game world."""
     global world
 
     for i in range(room.x1 + 1, room.x2):
