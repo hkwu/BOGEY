@@ -186,8 +186,9 @@ def add_entities(room):
 # Other functions
 def render_obj():
     """Places objects and tiles on the console display."""
+    global fov_refresh
+    
     if fov_refresh:
-        global fov_refresh
         fov_refresh = False
         libt.map_compute_fov(fov_map, player.x, player.y, 
                              config.LIGHT_RANGE, config.FOV_LIT_WALLS, 
