@@ -3,6 +3,19 @@ import libtcodpy as libt
 import tiles
 import config
 
+# Set the font, initialize window
+libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
+                             libt.FONT_TYPE_GREYSCALE 
+                             | libt.FONT_LAYOUT_TCOD)
+libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
+                       "Bogey", False)
+
+# Keypress delay
+libt.console_set_keyboard_repeat(50, 100)
+
+# Screen consoles
+sketch1 = libt.console_new(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
 # Colours
 COLOURS = {
     'bg': libt.white,
@@ -27,9 +40,8 @@ class Entity(object):
         self.solid = solid
 
     def move(self, dx, dy):
-        if not is_solid(self.x + dx, self.y):
+        if not is_solid(self.x + dx, self.y + dy):
             self.x += dx
-        if not is_solid(self.x, self.y + dy):
             self.y += dy
 
     def draw(self):
@@ -47,6 +59,16 @@ class Entity(object):
 class Player(Entity):
     def __init__(self, x, y, name):
         Entity.__init__(self, x, y, name, "@", COLOURS['player'], True)
+
+    def move_or_attack(self, dx, dy):
+        global fov_refresh
+
+        for mob in map_objects['mobs']:
+            if mob.x == self.x + dx and mob.y == self.y + dy:
+                print("You attack the %s!" % mob.name)
+        else:
+            fov_refresh = True
+            self.move(dx, dy)
 
 
 class Mob(Entity):
@@ -166,9 +188,10 @@ def is_solid(x, y):
     if not world[x][y].passable:
         return True
     
-    for obj in objects:
-        if obj.solid and obj.x == x and obj.y == y:
-            return True
+    for lst in map_objects:
+        for obj in map_objects[lst]:
+            if obj.solid and obj.x == x and obj.y == y:
+                return True
 
     return False
 
@@ -180,12 +203,24 @@ def add_entities(room):
     mob = random.randrange(10)
 
     if mob == 0:
-        objects.append(Spider(entity_x, entity_y))
+        map_objects['mobs'].append(Spider(entity_x, entity_y))
     elif mob == 1:
-        objects.append(Skeleton(entity_x, entity_y))
+        map_objects['mobs'].append(Skeleton(entity_x, entity_y))
 
 
 # Other functions
+def draw_obj(lst):
+    """Takes a list of objects and draws them on the map."""
+    for obj in lst:
+        obj.draw()
+
+
+def clear_obj(lst):
+    """Takes a list of objects and clears them from the map."""
+    for obj in lst:
+        obj.clear()
+
+
 def render_obj():
     """Places objects and tiles on the console display."""
     global fov_refresh
@@ -222,8 +257,8 @@ def render_obj():
                                                  COLOURS['ground'], 
                                                  COLOURS['bg'])
 
-    for obj in objects:
-        obj.draw()
+    for lst in map_objects:
+        draw_obj(map_objects[lst])
 
     libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, 
                       config.SCREEN_HEIGHT, 0, 0, 0)
@@ -237,39 +272,28 @@ def keybinds():
     if key.vk == libt.KEY_ENTER and key.lalt:
         libt.console_set_fullscreen(not libt.console_is_fullscreen())
     elif key.vk == libt.KEY_ESCAPE:
-        return True
+        return "exit"
 
-    if libt.console_is_key_pressed(libt.KEY_UP):
-        fov_refresh = True
-        player.move(0, -1)
-    elif libt.console_is_key_pressed(libt.KEY_DOWN):
-        fov_refresh = True
-        player.move(0, 1)
-    elif libt.console_is_key_pressed(libt.KEY_LEFT):
-        fov_refresh = True
-        player.move(-1, 0)
-    elif libt.console_is_key_pressed(libt.KEY_RIGHT):
-        fov_refresh = True
-        player.move(1, 0)
+    if game_state == "play":
+        if libt.console_is_key_pressed(libt.KEY_UP):
+            player.move_or_attack(0, -1)
+        elif libt.console_is_key_pressed(libt.KEY_DOWN):
+            player.move_or_attack(0, 1)
+        elif libt.console_is_key_pressed(libt.KEY_LEFT):
+            player.move_or_attack(-1, 0)
+        elif libt.console_is_key_pressed(libt.KEY_RIGHT):
+            player.move_or_attack(1, 0)
+        else:
+            return "no_move"
 
 # Class instances
 player = Player(0, 0, "Player")
 
 # Map objects
-objects = [player]
-
-# Set the font, initialize window
-libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
-                             libt.FONT_TYPE_GREYSCALE 
-                             | libt.FONT_LAYOUT_TCOD)
-libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
-                       "Bogey", False)
-
-# Keypress delay
-libt.console_set_keyboard_repeat(50, 100)
-
-# Screen consoles
-sketch1 = libt.console_new(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+map_objects = {
+    'characters': [player],
+    'mobs': []
+}
 
 # Begin initialization
 fov_refresh = True
@@ -281,13 +305,20 @@ for i in range(config.MAP_WIDTH):
         libt.map_set_properties(fov_map, i, j, 
                                 not world[i][j].fog, world[i][j].passable)
 
+game_state = "play"
+player_action = None
+
 # Main loop
 while not libt.console_is_window_closed():
     render_obj()
     libt.console_flush()
 
-    for obj in objects:
-        obj.clear()
+    for lst in map_objects:
+        clear_obj(map_objects[lst])
 
-    if keybinds():
+    player_action = keybinds()
+    if player_action == "exit":
         break
+    elif game_state == "play" and player_action != "no_move":
+        for mob in map_objects['mobs']:
+            print("The %s is ready to fight!" % mob.name)
