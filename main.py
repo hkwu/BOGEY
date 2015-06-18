@@ -28,6 +28,11 @@ COLOURS = {
     'text': libt.Color(164, 164, 164)
 }
 
+# Entity states
+HOLD = 0
+CHASE = 1
+RUN = 2
+
 
 # Classes
 class Entity(object):
@@ -72,8 +77,64 @@ class Player(Entity):
 
 
 class Mob(Entity):
-    def __init__(self, x, y, name, char):
+    def __init__(self, x, y, name, char, state=HOLD):
         Entity.__init__(self, x, y, name, char, COLOURS['mob'], True)
+        self.state = state
+        self.state_chart = [[None, in_sight_and_healthy, in_sight_and_not_healthy]
+                            [not_in_sight, None, in_sight_and_not_healthy]
+                            [not_in_sight, in_sight_and_healthy, None]]
+
+    def in_sight(self):
+        return libt.map_is_in_fov(fov_map, self.x, self.y)
+
+    def not_in_sight():
+        return not in_sight()
+
+    def healthy(self):
+        pass
+
+    def not_healthy(self):
+        return not healthy()
+
+    def in_sight_and_healthy(self):
+        return in_sight() and healthy()
+
+    def in_sight_and_not_healthy(self):
+        return in_sight() and not_healthy()
+
+    def chase(self, target):
+        dx = -(self.x - target.x) / abs(self.x - target.x)
+        dy = -(self.y - target.y) / abs(self.y - target.y)
+        direction = random.randrage(2)
+
+        # Random direction in which to approach
+        # 0 is vertical, 1 is horizontal
+        if direction:
+            if not is_solid(self.x + dx, self.y):
+                self.move(dx, 0)
+            else:
+                self.move(0, dy)
+        else:
+            if not is_solid(self.x, self.y + dy):
+                self.move(0, dy)
+            else:
+                self.move(dx, 0)
+
+    def action_handler():
+        y = 0
+        for x in self.state_chart[state]:
+            if not x:
+                y += 1
+                continue
+            elif x():
+                self.state = y
+
+        if self.state == HOLD:
+            return
+        elif self.state == CHASE:
+            chase(player)
+        else:
+            pass
 
 
 class Spider(Mob):
@@ -87,56 +148,6 @@ class Skeleton(Mob):
 
 
 # Map creation functions
-def make_map():
-    """Initializes the game world."""
-    global world
-    world = []
-
-    # Initialize the multi-dimensional array with unpassable tiles
-    for i in range(config.MAP_WIDTH):
-        world.append([])
-        for j in range(config.MAP_HEIGHT):
-            world[i].append(tiles.Tile(False))
-
-    rooms = []
-    num_rooms = 0
-
-    # Fill array with passable tiles that represent up to MAX_ROOMS
-    # number of rooms
-    for num in range(config.MAX_ROOMS):
-        w = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
-        h = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
-        x = random.randrange(config.MAP_WIDTH - w - 1)
-        y = random.randrange(config.MAP_HEIGHT - h - 1)
-
-        new = tiles.Room(x, y, w, h)
-        intersected = False
-
-        # Check for overlaps, stop if room overlaps old ones
-        for room in rooms:
-            if new.intersect(room):
-                intersected = True
-                break
-
-        # Create new rooms if no intersections with previous rooms exist
-        # Otherwise link rooms to each other
-        if not intersected and num_rooms == 0:
-            (player_x, player_y) = new.centre()
-            player.x = player_x
-            player.y = player_y
-
-            num_rooms += 1
-            rooms.append(new)
-            make_room(new)
-            add_entities(new)
-        elif not intersected:
-            num_rooms += 1
-            rooms.append(new)
-            make_room(new)
-            add_entities(new)
-            connect_rooms(rooms[num_rooms - 2], rooms[num_rooms - 1])
-
-
 def make_h_tunnel(x1, x2, y):
     """Creates passable tiles between x1 and x2 on the y coordinate."""
     global world
@@ -206,6 +217,56 @@ def add_entities(room):
         map_objects['mobs'].append(Spider(entity_x, entity_y))
     elif mob == 1:
         map_objects['mobs'].append(Skeleton(entity_x, entity_y))
+
+
+def make_map():
+    """Initializes the game world."""
+    global world
+    world = []
+
+    # Initialize the multi-dimensional array with unpassable tiles
+    for i in range(config.MAP_WIDTH):
+        world.append([])
+        for j in range(config.MAP_HEIGHT):
+            world[i].append(tiles.Tile(False))
+
+    rooms = []
+    num_rooms = 0
+
+    # Fill array with passable tiles that represent up to MAX_ROOMS
+    # number of rooms
+    for num in range(config.MAX_ROOMS):
+        w = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
+        h = random.randrange(config.ROOM_MIN_SIZE, config.ROOM_MAX_SIZE)
+        x = random.randrange(config.MAP_WIDTH - w - 1)
+        y = random.randrange(config.MAP_HEIGHT - h - 1)
+
+        new = tiles.Room(x, y, w, h)
+        intersected = False
+
+        # Check for overlaps, stop if room overlaps old ones
+        for room in rooms:
+            if new.intersect(room):
+                intersected = True
+                break
+
+        # Create new rooms if no intersections with previous rooms exist
+        # Otherwise link rooms to each other
+        if not intersected and num_rooms == 0:
+            (player_x, player_y) = new.centre()
+            player.x = player_x
+            player.y = player_y
+
+            num_rooms += 1
+            rooms.append(new)
+            make_room(new)
+            add_entities(new)
+        elif not intersected:
+            num_rooms += 1
+            rooms.append(new)
+            make_room(new)
+            add_entities(new)
+            connect_rooms(rooms[num_rooms - 2], rooms[num_rooms - 1])
 
 
 # Other functions
@@ -321,4 +382,4 @@ while not libt.console_is_window_closed():
         break
     elif game_state == "play" and player_action != "no_move":
         for mob in map_objects['mobs']:
-            print("The %s is ready to fight!" % mob.name)
+            mob.action_handler()
