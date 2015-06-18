@@ -121,13 +121,13 @@ class Mob(Entity):
                 self.move(dx, 0)
 
     def action_handler():
-        y = 0
-        for x in self.state_chart[state]:
-            if not x:
-                y += 1
+        x = 0
+        for check in self.state_chart[state]:
+            if not check:
+                x += 1
                 continue
-            elif x():
-                self.state = y
+            elif check():
+                self.state = x
 
         if self.state == HOLD:
             return
