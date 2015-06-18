@@ -64,6 +64,7 @@ class Entity(object):
 class Player(Entity):
     def __init__(self, x, y, name):
         Entity.__init__(self, x, y, name, "@", COLOURS['player'], True)
+        self.hp = 500
 
     def move_or_attack(self, dx, dy):
         global fov_refresh
@@ -77,35 +78,40 @@ class Player(Entity):
 
 
 class Mob(Entity):
-    def __init__(self, x, y, name, char, state=HOLD):
+    def __init__(self, x, y, name, char, hp, state=HOLD):
         Entity.__init__(self, x, y, name, char, COLOURS['mob'], True)
+        self.hp = hp
         self.state = state
-        self.state_chart = [[None, in_sight_and_healthy, in_sight_and_not_healthy]
-                            [not_in_sight, None, in_sight_and_not_healthy]
-                            [not_in_sight, in_sight_and_healthy, None]]
+        self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
+                            [self.not_in_sight, None, self.in_sight_and_not_healthy],
+                            [self.not_in_sight, self.in_sight_and_healthy, None]]
 
+    # Behavioural checks to switch between states
     def in_sight(self):
         return libt.map_is_in_fov(fov_map, self.x, self.y)
 
-    def not_in_sight():
-        return not in_sight()
+    def not_in_sight(self):
+        return not self.in_sight()
 
     def healthy(self):
         pass
 
     def not_healthy(self):
-        return not healthy()
+        return not self.healthy()
 
     def in_sight_and_healthy(self):
-        return in_sight() and healthy()
+        return self.in_sight() and self.healthy()
 
     def in_sight_and_not_healthy(self):
-        return in_sight() and not_healthy()
+        return self.in_sight() and self.not_healthy()
 
+    # Default state methods
     def chase(self, target):
-        dx = -(self.x - target.x) / abs(self.x - target.x)
-        dy = -(self.y - target.y) / abs(self.y - target.y)
-        direction = random.randrage(2)
+        x_diff = self.x - target.x
+        y_diff = self.y - target.y
+        dx = 0 if x_diff == 0 else -x_diff / abs(x_diff)
+        dy = 0 if y_diff == 0 else -y_diff / abs(y_diff)
+        direction = random.randrange(2)
 
         # Random direction in which to approach
         # 0 is vertical, 1 is horizontal
@@ -120,9 +126,9 @@ class Mob(Entity):
             else:
                 self.move(dx, 0)
 
-    def action_handler():
+    def action_handler(self):
         x = 0
-        for check in self.state_chart[state]:
+        for check in self.state_chart[self.state]:
             if not check:
                 x += 1
                 continue
@@ -132,7 +138,7 @@ class Mob(Entity):
         if self.state == HOLD:
             return
         elif self.state == CHASE:
-            chase(player)
+            self.chase(player)
         else:
             pass
 
