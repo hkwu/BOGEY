@@ -1,3 +1,4 @@
+import math
 import random
 import libtcodpy as libt
 import tiles
@@ -70,8 +71,10 @@ class Player(Entity):
         global fov_refresh
 
         for mob in map_objects['mobs']:
-            if mob.x == self.x + dx and mob.y == self.y + dy:
-                print("You attack the %s!" % mob.name)
+            if (mob.x == self.x + dx and 
+                mob.y == self.y + dy and mob.solid):
+                mob.hp -= 50
+                print("You attack the %s for 50 hp!" % mob.name)
         else:
             fov_refresh = True
             self.move(dx, dy)
@@ -81,6 +84,7 @@ class Mob(Entity):
     def __init__(self, x, y, name, char, hp, state=HOLD):
         Entity.__init__(self, x, y, name, char, COLOURS['mob'], True)
         self.hp = hp
+        self.max_hp = hp
         self.state = state
         self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
@@ -94,16 +98,13 @@ class Mob(Entity):
         return not self.in_sight()
 
     def healthy(self):
-        pass
-
-    def not_healthy(self):
-        return not self.healthy()
+        return self.hp >= 0.8*self.max_hp
 
     def in_sight_and_healthy(self):
         return self.in_sight() and self.healthy()
 
     def in_sight_and_not_healthy(self):
-        return self.in_sight() and self.not_healthy()
+        return self.in_sight() and not self.healthy()
 
     # Default state methods
     def chase(self, target):
@@ -126,7 +127,31 @@ class Mob(Entity):
             else:
                 self.move(dx, 0)
 
+    def run(self, target):
+        linear_dist = lambda x1, x2, y1, y2: math.sqrt((x1 - x2)**2 + 
+                                                       (y1 - y2)**2)
+        max_dist_to_target = linear_dist(self.x, target.x, 
+                                         self.y, target.y)
+        possible_posn = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        move_to_make = None
+
+        for posn in possible_posn:
+            if not is_solid(self.x + posn[0], self.y + posn[1]):
+                new_dist = linear_dist(self.x + posn[0], target.x, 
+                                       self.y + posn[1], target.y)
+                if new_dist > max_dist_to_target:
+                    max_dist_to_target = new_dist
+                    move_to_make = posn
+
+        if move_to_make:
+            self.move(move_to_make[0], move_to_make[1])
+
     def action_handler(self):
+        if self.hp <= 0:
+            self.char = "X"
+            self.solid = False
+            return
+
         x = 0
         for check in self.state_chart[self.state]:
             if not check:
@@ -135,22 +160,27 @@ class Mob(Entity):
             elif check():
                 self.state = x
 
+            x += 1
+
         if self.state == HOLD:
+            # Possibly substitute check with hp method
+            if self.hp <= self.max_hp:
+                self.hp += 50
             return
         elif self.state == CHASE:
             self.chase(player)
-        else:
-            pass
+        elif self.state == RUN:
+            self.run(player)
 
 
 class Spider(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Spider", "s")
+        Mob.__init__(self, x, y, "Spider", "s", 200)
 
 
 class Skeleton(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Skeleton", "S")
+        Mob.__init__(self, x, y, "Skeleton", "S", 235)
 
 
 # Map creation functions
@@ -217,7 +247,7 @@ def add_entities(room):
     """Adds random entities to a room."""
     entity_x = random.randrange(room.x1 + 1, room.x2)
     entity_y = random.randrange(room.y1 + 1, room.y2)
-    mob = random.randrange(10)
+    mob = random.randrange(3)
 
     if mob == 0:
         map_objects['mobs'].append(Spider(entity_x, entity_y))
