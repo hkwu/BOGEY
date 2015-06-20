@@ -82,12 +82,14 @@ class CombatEntity(Entity):
 
     hp: hitpoints for entity
     atk: attack strength of entity
+    morale: probability for entity to stand its ground in ground
     """
-    def __init__(self, x, y, name, char, colour, solid, hp, atk,):
+    def __init__(self, x, y, name, char, colour, solid, hp, atk, morale):
         Entity.__init__(self, x, y, name, char, colour, True)
         self.hp = hp
         self.max_hp = hp
         self.atk = atk
+        self.morale = morale
 
     def take_damage(self, damage):
         """Deals damage to current entity."""
@@ -99,7 +101,8 @@ class CombatEntity(Entity):
 
     def deal_damage(self, target):
         """Deals damage to target entity."""
-        target.take_damage(self.atk)
+        if hasattr(target, "hp"):
+            target.take_damage(self.atk)
 
     # Placeholder method to be overwitten in child classes
     def die(self):
@@ -111,7 +114,7 @@ class Player(CombatEntity):
     """Player class."""
     def __init__(self, x, y, name):
         CombatEntity.__init__(self, x, y, name, "@", 
-                              COLOURS['player'], True, 300, 30)
+                              COLOURS['player'], True, 300, 30, None)
 
     def move_or_attack(self, dx, dy):
         """Makes a move or attack, depending on surroundings."""
@@ -121,7 +124,6 @@ class Player(CombatEntity):
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
                 self.deal_damage(mob)
-                print("You attack the %s for %d hp!" % (mob.name, self.atk))
         else:
             fov_refresh = True
             self.move(dx, dy)
@@ -138,18 +140,25 @@ class Mob(CombatEntity):
 
     state: defines AI behaviour of entity
     """
-    def __init__(self, x, y, name, char, hp, atk, state=HOLD):
+    def __init__(self, x, y, name, char, hp, atk, morale, state=HOLD):
         CombatEntity.__init__(self, x, y, name, char, 
-                              COLOURS['mob'], True, hp, atk)
+                              COLOURS['mob'], True, hp, atk, morale)
         self.state = state
         self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
                             [self.not_in_sight, self.in_sight_and_healthy, None]]
 
+    def send_to_back(self):
+        """Moves mob to first index in mobs list."""
+        global map_objects
+        map_objects['mobs'].remove(self)
+        map_objects['mobs'].insert(0, self)
+
     def die(self):
         self.char = "X"
         self.solid = False
         self.state = DEAD
+        self.send_to_back()
 
     # Behavioural checks to switch between states
     def in_sight(self):
@@ -165,8 +174,8 @@ class Mob(CombatEntity):
         return self.in_sight() and self.healthy()
 
     def in_sight_and_not_healthy(self):
-        return False
-        # return self.in_sight() and not self.healthy()
+        if random.randrange(101) > self.morale:
+            return self.in_sight() and not self.healthy()
 
     # Default state methods
     def chase(self, target):
@@ -236,18 +245,18 @@ class Mob(CombatEntity):
             return
         elif self.state == CHASE:
             self.chase(player)
-        # elif self.state == RUN:
-        #     self.run(player)
+        elif self.state == RUN:
+            self.run(player)
 
 
 class Spider(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Spider", "s", 200, 15)
+        Mob.__init__(self, x, y, "Spider", "s", 200, 15, 50)
 
 
 class Skeleton(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Skeleton", "S", 235, 20)
+        Mob.__init__(self, x, y, "Skeleton", "S", 235, 20, 100)
 
 
 # Map creation functions
@@ -426,6 +435,9 @@ def render_obj():
 
     libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, 
                       config.SCREEN_HEIGHT, 0, 0, 0)
+    #libt.console_set_default_foreground(sketch1, libt.white)
+    libt.console_print_ex(0, 1, config.SCREEN_HEIGHT - 2, libt.BKGND_NONE, libt.LEFT,
+        'HP: ' + str(player.hp) + '/' + str(player.max_hp))
 
 
 def keybinds():
@@ -455,8 +467,8 @@ player = Player(0, 0, "Player")
 
 # Map objects
 map_objects = {
-    'characters': [player],
-    'mobs': []
+    'mobs': [],
+    'characters': [player]
 }
 
 # Begin initialization
