@@ -120,7 +120,7 @@ class Player(CombatEntity):
         for mob in map_objects['mobs']:
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
-                mob.take_damage(self.atk)
+                self.deal_damage(mob)
                 print("You attack the %s for %d hp!" % (mob.name, self.atk))
         else:
             fov_refresh = True
@@ -181,7 +181,7 @@ class Mob(CombatEntity):
         # 0 is vertical, 1 is horizontal
         if direction:
             if self.x + dx == player.x and self.y == player.y:
-                player.take_damage(self.atk)
+                self.deal_damage(player)
             elif not is_solid(self.x + dx, self.y):
                 self.move(dx, 0)
             else:
