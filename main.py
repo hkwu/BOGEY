@@ -38,6 +38,16 @@ DEAD = "dead"
 
 # Classes
 class Entity(object):
+    """
+    Base entity class for items, player, NPCs, mobs, etc.
+
+    x: x-coordinate of entity
+    y: y-coordinate of entity
+    name: name of entity
+    char: character representation of entity on world map
+    colour: colour of entity on map
+    solid: whether or not player can walk through entity
+    """
     def __init__(self, x, y, name, char, colour, solid=False):
         self.x = x
         self.y = y
@@ -47,23 +57,32 @@ class Entity(object):
         self.solid = solid
 
     def move(self, dx, dy):
+        """Moves the entity."""
         if not is_solid(self.x + dx, self.y + dy):
             self.x += dx
             self.y += dy
 
     def draw(self):
+        """Draws entity on console."""
         if libt.map_is_in_fov(fov_map, self.x, self.y):
             libt.console_set_default_foreground(sketch1, self.colour)
             libt.console_put_char(sketch1, self.x, self.y, 
                                   self.char, libt.BKGND_NONE)
 
     def clear(self):
+        """Clears entity from console."""
         if libt.map_is_in_fov(fov_map, self.x, self.y):
             libt.console_put_char(sketch1, self.x, self.y, 
                                   " ", libt.BKGND_NONE)
 
 
 class CombatEntity(Entity):
+    """
+    Class for entities that engage in combat.
+
+    hp: hitpoints for entity
+    atk: attack strength of entity
+    """
     def __init__(self, x, y, name, char, colour, solid, hp, atk,):
         Entity.__init__(self, x, y, name, char, colour, True)
         self.hp = hp
@@ -71,6 +90,7 @@ class CombatEntity(Entity):
         self.atk = atk
 
     def take_damage(self, damage):
+        """Deals damage to current entity."""
         if self.hp - damage <= 0:
             self.hp = 0
             self.die()
@@ -78,18 +98,23 @@ class CombatEntity(Entity):
             self.hp -= damage
 
     def deal_damage(self, target, damage):
+        """Deals damage to target entity."""
         target.take_damage(damage)
 
+    # Placeholder method to be overwitten in child classes
     def die(self):
+        """Handles death of the entity."""
         return
 
 
 class Player(CombatEntity):
+    """Player class."""
     def __init__(self, x, y, name):
         CombatEntity.__init__(self, x, y, name, "@", 
                               COLOURS['player'], True, 300, 30)
 
     def move_or_attack(self, dx, dy):
+        """Makes a move or attack, depending on surroundings."""
         global fov_refresh
 
         for mob in map_objects['mobs']:
@@ -108,6 +133,11 @@ class Player(CombatEntity):
 
 
 class Mob(CombatEntity):
+    """
+    Hostile mob class.
+
+    state: defines AI behaviour of entity
+    """
     def __init__(self, x, y, name, char, hp, atk, state=HOLD):
         CombatEntity.__init__(self, x, y, name, char, 
                               COLOURS['mob'], True, hp, atk)
@@ -140,6 +170,7 @@ class Mob(CombatEntity):
 
     # Default state methods
     def chase(self, target):
+        """Moves entity towards the target and attacks if possible."""
         x_diff = self.x - target.x
         y_diff = self.y - target.y
         dx = 0 if x_diff == 0 else -x_diff / abs(x_diff)
@@ -164,6 +195,7 @@ class Mob(CombatEntity):
                 self.move(dx, 0)
 
     def run(self, target):
+        """Moves entity away from target."""
         linear_dist = lambda x1, x2, y1, y2: math.sqrt((x1 - x2)**2 + 
                                                        (y1 - y2)**2)
         max_dist_to_target = linear_dist(self.x, target.x, 
@@ -183,6 +215,10 @@ class Mob(CombatEntity):
             self.move(move_to_make[0], move_to_make[1])
 
     def action_handler(self):
+        """
+        Checks for changes in state for the entity 
+        and calls appropriate methods.
+        """
         if self.state == DEAD:
             return
 
