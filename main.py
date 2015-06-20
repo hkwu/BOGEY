@@ -97,9 +97,9 @@ class CombatEntity(Entity):
         else:
             self.hp -= damage
 
-    def deal_damage(self, target, damage):
+    def deal_damage(self, target):
         """Deals damage to target entity."""
-        target.take_damage(damage)
+        target.take_damage(self.atk)
 
     # Placeholder method to be overwitten in child classes
     def die(self):
