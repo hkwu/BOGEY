@@ -46,7 +46,7 @@ class Entity(object):
     name: name of entity
     char: character representation of entity on world map
     colour: colour of entity on map
-    solid: whether or not player can walk through entity
+    solid: true if player can walk through entity
     """
     def __init__(self, x, y, name, char, colour, solid=False):
         self.x = x
