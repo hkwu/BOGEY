@@ -33,6 +33,7 @@ COLOURS = {
 HOLD = 0
 CHASE = 1
 RUN = 2
+DEAD = "dead"
 
 
 # Classes
@@ -62,10 +63,31 @@ class Entity(object):
                                   " ", libt.BKGND_NONE)
 
 
-class Player(Entity):
+class CombatEntity(Entity):
+    def __init__(self, x, y, name, char, colour, solid, hp, atk,):
+        Entity.__init__(self, x, y, name, char, colour, True)
+        self.hp = hp
+        self.max_hp = hp
+        self.atk = atk
+
+    def take_damage(self, damage):
+        if self.hp - damage <= 0:
+            self.hp = 0
+            self.die()
+        else:
+            self.hp -= damage
+
+    def deal_damage(self, target, damage):
+        target.take_damage(damage)
+
+    def die(self):
+        return
+
+
+class Player(CombatEntity):
     def __init__(self, x, y, name):
-        Entity.__init__(self, x, y, name, "@", COLOURS['player'], True)
-        self.hp = 500
+        CombatEntity.__init__(self, x, y, name, "@", 
+                              COLOURS['player'], True, 300, 30)
 
     def move_or_attack(self, dx, dy):
         global fov_refresh
@@ -73,22 +95,31 @@ class Player(Entity):
         for mob in map_objects['mobs']:
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
-                mob.hp -= 50
-                print("You attack the %s for 50 hp!" % mob.name)
+                mob.take_damage(self.atk)
+                print("You attack the %s for %d hp!" % (mob.name, self.atk))
         else:
             fov_refresh = True
             self.move(dx, dy)
 
+    def die(self):
+        global game_state
+        game_state = "dead"
+        self.char = "%"
 
-class Mob(Entity):
-    def __init__(self, x, y, name, char, hp, state=HOLD):
-        Entity.__init__(self, x, y, name, char, COLOURS['mob'], True)
-        self.hp = hp
-        self.max_hp = hp
+
+class Mob(CombatEntity):
+    def __init__(self, x, y, name, char, hp, atk, state=HOLD):
+        CombatEntity.__init__(self, x, y, name, char, 
+                              COLOURS['mob'], True, hp, atk)
         self.state = state
         self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
                             [self.not_in_sight, self.in_sight_and_healthy, None]]
+
+    def die(self):
+        self.char = "X"
+        self.solid = False
+        self.state = DEAD
 
     # Behavioural checks to switch between states
     def in_sight(self):
@@ -104,7 +135,8 @@ class Mob(Entity):
         return self.in_sight() and self.healthy()
 
     def in_sight_and_not_healthy(self):
-        return self.in_sight() and not self.healthy()
+        return False
+        # return self.in_sight() and not self.healthy()
 
     # Default state methods
     def chase(self, target):
@@ -117,12 +149,16 @@ class Mob(Entity):
         # Random direction in which to approach
         # 0 is vertical, 1 is horizontal
         if direction:
-            if not is_solid(self.x + dx, self.y):
+            if self.x + dx == player.x and self.y == player.y:
+                player.take_damage(self.atk)
+            elif not is_solid(self.x + dx, self.y):
                 self.move(dx, 0)
             else:
                 self.move(0, dy)
         else:
-            if not is_solid(self.x, self.y + dy):
+            if self.x == player.x and self.y + dy == player.y:
+                player.take_damage(self.atk)
+            elif not is_solid(self.x, self.y + dy):
                 self.move(0, dy)
             else:
                 self.move(dx, 0)
@@ -147,9 +183,7 @@ class Mob(Entity):
             self.move(move_to_make[0], move_to_make[1])
 
     def action_handler(self):
-        if self.hp <= 0:
-            self.char = "X"
-            self.solid = False
+        if self.state == DEAD:
             return
 
         x = 0
@@ -163,24 +197,21 @@ class Mob(Entity):
             x += 1
 
         if self.state == HOLD:
-            # Possibly substitute check with hp method
-            if self.hp <= self.max_hp:
-                self.hp += 50
             return
         elif self.state == CHASE:
             self.chase(player)
-        elif self.state == RUN:
-            self.run(player)
+        # elif self.state == RUN:
+        #     self.run(player)
 
 
 class Spider(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Spider", "s", 200)
+        Mob.__init__(self, x, y, "Spider", "s", 200, 15)
 
 
 class Skeleton(Mob):
     def __init__(self, x, y):
-        Mob.__init__(self, x, y, "Skeleton", "S", 235)
+        Mob.__init__(self, x, y, "Skeleton", "S", 235, 20)
 
 
 # Map creation functions
