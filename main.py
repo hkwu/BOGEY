@@ -112,9 +112,11 @@ class CombatEntity(Entity):
             self.hp -= damage
 
     def deal_damage(self, target):
-        """Deals damage to target entity."""
+        """Deals damage to target entity and returns damage done."""
         if hasattr(target, "hp"):
-            target.take_damage(self.atk)
+            dmg = random.randrange(self.atk + 1)
+            target.take_damage(dmg)
+            return dmg
 
     # Placeholder method to be overwitten in child classes
     def die(self):
@@ -135,9 +137,8 @@ class Player(CombatEntity):
         for mob in map_objects['mobs']:
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
-                add_msg("You attack %s for %d damage!" % (mob.name, self.atk), 
+                add_msg("You attack %s for %d damage!" % (mob.name, self.deal_damage(mob)), 
                         COLOURS['player_atk_text'])
-                self.deal_damage(mob)
 
                 if mob.state == DEAD:
                     add_msg("You killed the %s!" % mob.name, 
@@ -213,9 +214,8 @@ class Mob(CombatEntity):
 
         for posn in possible_posn:
             if self.x + posn[0] == player.x and self.y + posn[1] == player.y:
-                add_msg("%s attacks you for %d damage!" % (self.name, self.atk), 
+                add_msg("%s attacks you for %d damage!" % (self.name, self.deal_damage(player)), 
                         COLOURS['mob_atk_text'])
-                self.deal_damage(player)
             elif not is_solid(self.x + posn[0], self.y + posn[1]):
                 new_dist = linear_dist(self.x + posn[0], target.x, 
                                        self.y + posn[1], target.y)
