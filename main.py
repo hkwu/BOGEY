@@ -1,5 +1,6 @@
 import math
 import random
+import textwrap
 import libtcodpy as libt
 import tiles
 import config
@@ -22,16 +23,20 @@ gui = libt.console_new(config.GUI_WIDTH, config.GUI_HEIGHT)
 # Colours
 COLOURS = {
     'bg': libt.white,
-    'wall': libt.Color(160, 160, 160),
+    'wall': libt.light_grey,
     'lit_wall': libt.Color(173, 173, 0),
-    'ground': libt.Color(160, 160, 160),
+    'ground': libt.light_grey,
     'lit_ground': libt.Color(21, 21, 21),
     'player': libt.black,
-    'mob': libt.Color(255, 0, 0),
+    'mob': libt.red,
     'gui_bg': libt.black,
-    'bar_hp': libt.Color(191, 0, 0),
-    'bar_hp_unfilled': libt.Color(128, 0, 0),
-    'text': libt.Color(164, 164, 164)
+    'bar_hp': libt.dark_red,
+    'bar_hp_unfilled': libt.darker_red,
+    'text': libt.lightest_grey,
+    'player_atk_text': libt.grey,
+    'mob_atk_text': libt.flame,
+    'player_kill_text': libt.green,
+    'player_die_text': libt.white
 }
 
 # Entity states
@@ -130,7 +135,13 @@ class Player(CombatEntity):
         for mob in map_objects['mobs']:
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
+                add_msg("You attack %s for %d damage!" % (mob.name, self.atk), 
+                        COLOURS['player_atk_text'])
                 self.deal_damage(mob)
+
+                if mob.state == DEAD:
+                    add_msg("You killed the %s!" % mob.name, 
+                            COLOURS['player_kill_text'])
         else:
             fov_refresh = True
             self.move(dx, dy)
@@ -139,6 +150,7 @@ class Player(CombatEntity):
         global game_state
         game_state = "dead"
         self.char = "%"
+        add_msg("You have died!", COLOURS['player_die_text'])
 
 
 class Mob(CombatEntity):
@@ -192,28 +204,27 @@ class Mob(CombatEntity):
     # Default state methods
     def chase(self, target):
         """Moves entity towards the target and attacks if possible."""
-        x_diff = self.x - target.x
-        y_diff = self.y - target.y
-        dx = 0 if x_diff == 0 else -x_diff / abs(x_diff)
-        dy = 0 if y_diff == 0 else -y_diff / abs(y_diff)
-        direction = random.randrange(2)
+        linear_dist = lambda x1, x2, y1, y2: math.sqrt((x1 - x2)**2 + 
+                                                       (y1 - y2)**2)
+        min_dist_to_target = linear_dist(self.x, target.x, 
+                                         self.y, target.y)
+        possible_posn = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        move_to_make = None
 
-        # Random direction in which to approach
-        # 0 is vertical, 1 is horizontal
-        if direction:
-            if self.x + dx == player.x and self.y == player.y:
+        for posn in possible_posn:
+            if self.x + posn[0] == player.x and self.y + posn[1] == player.y:
+                add_msg("%s attacks you for %d damage!" % (self.name, self.atk), 
+                        COLOURS['mob_atk_text'])
                 self.deal_damage(player)
-            elif not is_solid(self.x + dx, self.y):
-                self.move(dx, 0)
-            else:
-                self.move(0, dy)
-        else:
-            if self.x == player.x and self.y + dy == player.y:
-                player.take_damage(self.atk)
-            elif not is_solid(self.x, self.y + dy):
-                self.move(0, dy)
-            else:
-                self.move(dx, 0)
+            elif not is_solid(self.x + posn[0], self.y + posn[1]):
+                new_dist = linear_dist(self.x + posn[0], target.x, 
+                                       self.y + posn[1], target.y)
+                if new_dist < min_dist_to_target:
+                    min_dist_to_target = new_dist
+                    move_to_make = posn
+
+        if move_to_make:
+            self.move(move_to_make[0], move_to_make[1])
 
     def run(self, target):
         """Moves entity away from target."""
@@ -409,6 +420,42 @@ def make_map():
 
 ######################################
 
+# GUI functions
+
+######################################
+def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
+    """
+    Creates a bar that shows the current value 
+    out of the given maximum.
+    """
+    filled_width = int(float(val) / max_val * config.BAR_WIDTH)
+
+    libt.console_set_default_background(gui, back_colour)
+    libt.console_rect(gui, x, y, config.BAR_WIDTH, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+
+    libt.console_set_default_background(gui, bar_colour)
+    if filled_width > 0:
+        libt.console_rect(gui, x, y, filled_width, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+
+    bar_midpoint = (int(config.BAR_WIDTH/2 + x), int(config.BAR_HEIGHT/2 + y))
+
+    libt.console_set_default_foreground(gui, COLOURS['text'])
+    libt.console_print_ex(gui, bar_midpoint[0], bar_midpoint[1], libt.BKGND_NONE, libt.CENTER,
+                          "%s: %d/%d" % (name, val, max_val))
+
+
+def add_msg(msg, colour=COLOURS['text']):
+    """Adds a message to the message box."""
+    wrapped = textwrap.wrap(msg, config.MSG_WIDTH - 5)
+
+    for line in wrapped:
+        if len(game_msgs) == config.MSG_HEIGHT:
+            del game_msgs[0]
+        game_msgs.append((line, colour))
+
+
+######################################
+
 # Other functions
 
 ######################################
@@ -471,6 +518,13 @@ def render_obj():
     fillup_bar(5, 5, "HP", player.hp, player.max_hp, 
                COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
 
+    y = 1
+    for (msg, colour) in game_msgs:
+        libt.console_set_default_foreground(gui, colour)
+        libt.console_print_ex(gui, config.MSG_WIDTH + 5, y, 
+                              libt.BKGND_NONE, libt.LEFT, msg)
+        y += 1
+
     # Blit the consoles
     libt.console_blit(game_map, 0, 0, 
                       config.MAP_WIDTH, config.MAP_HEIGHT, 0, 
@@ -503,27 +557,6 @@ def keybinds():
             return "no_move"
 
 
-def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
-    """
-    Creates a bar that shows the current value 
-    out of the given maximum.
-    """
-    filled_width = int(float(val) / max_val * config.BAR_WIDTH)
-
-    libt.console_set_default_background(gui, back_colour)
-    libt.console_rect(gui, x, y, config.BAR_WIDTH, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
-
-    libt.console_set_default_background(gui, bar_colour)
-    if filled_width > 0:
-        libt.console_rect(gui, x, y, filled_width, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
-
-    bar_midpoint = (int(config.BAR_WIDTH/2 + x), int(config.BAR_HEIGHT/2 + y))
-
-    libt.console_set_default_foreground(gui, COLOURS['text'])
-    libt.console_print_ex(gui, bar_midpoint[0], bar_midpoint[1], libt.BKGND_NONE, libt.CENTER,
-                          "%s: %d/%d" % (name, val, max_val))
-
-
 # Class instances
 player = Player(0, 0, "Player")
 
@@ -545,6 +578,7 @@ for i in range(config.MAP_WIDTH):
 
 game_state = "play"
 player_action = None
+game_msgs = []
 
 # Main loop
 while not libt.console_is_window_closed():
