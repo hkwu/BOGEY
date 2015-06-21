@@ -10,12 +10,14 @@ libt.console_set_custom_font("dejavu10x10_gs_tc.png",
                              | libt.FONT_LAYOUT_TCOD)
 libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
                        "Bogey", False)
+libt.console_credits()
 
 # Keypress delay
 libt.console_set_keyboard_repeat(50, 100)
 
 # Screen consoles
-sketch1 = libt.console_new(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+game_map = libt.console_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+gui = libt.console_new(config.GUI_WIDTH, config.GUI_HEIGHT)
 
 # Colours
 COLOURS = {
@@ -26,6 +28,9 @@ COLOURS = {
     'lit_ground': libt.Color(21, 21, 21),
     'player': libt.black,
     'mob': libt.Color(255, 0, 0),
+    'gui_bg': libt.black,
+    'bar_hp': libt.Color(191, 0, 0),
+    'bar_hp_unfilled': libt.Color(128, 0, 0),
     'text': libt.Color(164, 164, 164)
 }
 
@@ -36,7 +41,11 @@ RUN = 2
 DEAD = "dead"
 
 
+######################################
+
 # Classes
+
+######################################
 class Entity(object):
     """
     Base entity class for items, player, NPCs, mobs, etc.
@@ -65,14 +74,14 @@ class Entity(object):
     def draw(self):
         """Draws entity on console."""
         if libt.map_is_in_fov(fov_map, self.x, self.y):
-            libt.console_set_default_foreground(sketch1, self.colour)
-            libt.console_put_char(sketch1, self.x, self.y, 
+            libt.console_set_default_foreground(game_map, self.colour)
+            libt.console_put_char(game_map, self.x, self.y, 
                                   self.char, libt.BKGND_NONE)
 
     def clear(self):
         """Clears entity from console."""
         if libt.map_is_in_fov(fov_map, self.x, self.y):
-            libt.console_put_char(sketch1, self.x, self.y, 
+            libt.console_put_char(game_map, self.x, self.y, 
                                   " ", libt.BKGND_NONE)
 
 
@@ -82,14 +91,12 @@ class CombatEntity(Entity):
 
     hp: hitpoints for entity
     atk: attack strength of entity
-    morale: probability for entity to stand its ground in ground
     """
-    def __init__(self, x, y, name, char, colour, solid, hp, atk, morale):
+    def __init__(self, x, y, name, char, colour, solid, hp, atk):
         Entity.__init__(self, x, y, name, char, colour, True)
         self.hp = hp
         self.max_hp = hp
         self.atk = atk
-        self.morale = morale
 
     def take_damage(self, damage):
         """Deals damage to current entity."""
@@ -114,7 +121,7 @@ class Player(CombatEntity):
     """Player class."""
     def __init__(self, x, y, name):
         CombatEntity.__init__(self, x, y, name, "@", 
-                              COLOURS['player'], True, 300, 30, None)
+                              COLOURS['player'], True, 300, 30)
 
     def move_or_attack(self, dx, dy):
         """Makes a move or attack, depending on surroundings."""
@@ -138,12 +145,15 @@ class Mob(CombatEntity):
     """
     Hostile mob class.
 
+    morale: probability for entity to stand its ground in ground
     state: defines AI behaviour of entity
     """
     def __init__(self, x, y, name, char, hp, atk, morale, state=HOLD):
         CombatEntity.__init__(self, x, y, name, char, 
-                              COLOURS['mob'], True, hp, atk, morale)
+                              COLOURS['mob'], True, hp, atk)
+        self.morale = morale
         self.state = state
+        self.previous_state = None
         self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
                             [self.not_in_sight, self.in_sight_and_healthy, None]]
@@ -168,7 +178,7 @@ class Mob(CombatEntity):
         return not self.in_sight()
 
     def healthy(self):
-        return self.hp >= 0.8*self.max_hp
+        return self.hp >= 0.4*self.max_hp
 
     def in_sight_and_healthy(self):
         return self.in_sight() and self.healthy()
@@ -176,6 +186,8 @@ class Mob(CombatEntity):
     def in_sight_and_not_healthy(self):
         if random.randrange(101) > self.morale:
             return self.in_sight() and not self.healthy()
+
+        return False
 
     # Default state methods
     def chase(self, target):
@@ -237,6 +249,7 @@ class Mob(CombatEntity):
                 x += 1
                 continue
             elif check():
+                self.previous_state = self.state
                 self.state = x
 
             x += 1
@@ -259,7 +272,11 @@ class Skeleton(Mob):
         Mob.__init__(self, x, y, "Skeleton", "S", 235, 20, 100)
 
 
+######################################
+
 # Map creation functions
+
+######################################
 def make_h_tunnel(x1, x2, y):
     """Creates passable tiles between x1 and x2 on the y coordinate."""
     global world
@@ -305,7 +322,11 @@ def make_room(room):
             world[i][j].fog = False
 
 
+######################################
+
 # Entity functions
+
+######################################
 def is_solid(x, y):
     """Determines if tile/entity at (x, y) is solid."""
     if not world[x][y].passable:
@@ -321,14 +342,19 @@ def is_solid(x, y):
 
 def add_entities(room):
     """Adds random entities to a room."""
-    entity_x = random.randrange(room.x1 + 1, room.x2)
-    entity_y = random.randrange(room.y1 + 1, room.y2)
-    mob = random.randrange(3)
+    count = config.MAX_MOBS
 
-    if mob == 0:
-        map_objects['mobs'].append(Spider(entity_x, entity_y))
-    elif mob == 1:
-        map_objects['mobs'].append(Skeleton(entity_x, entity_y))
+    while count > 0:
+        entity_x = random.randrange(room.x1 + 1, room.x2)
+        entity_y = random.randrange(room.y1 + 1, room.y2)
+        mob = random.randrange(3)
+
+        if mob == 0:
+            map_objects['mobs'].append(Spider(entity_x, entity_y))
+        elif mob == 1:
+            map_objects['mobs'].append(Skeleton(entity_x, entity_y))
+
+        count -= 1
 
 
 def make_map():
@@ -368,8 +394,8 @@ def make_map():
             (player_x, player_y) = new.centre()
             player.x = player_x
             player.y = player_y
-
             num_rooms += 1
+
             rooms.append(new)
             make_room(new)
             add_entities(new)
@@ -381,7 +407,11 @@ def make_map():
             connect_rooms(rooms[num_rooms - 2], rooms[num_rooms - 1])
 
 
+######################################
+
 # Other functions
+
+######################################
 def draw_obj(lst):
     """Takes a list of objects and draws them on the map."""
     for obj in lst:
@@ -413,31 +443,41 @@ def render_obj():
                     world[i][j].seen = True
 
                     if fog:
-                        libt.console_put_char_ex(sketch1, i, j, "#",
+                        libt.console_put_char_ex(game_map, i, j, "#",
                                                  COLOURS['lit_wall'], 
                                                  COLOURS['bg'])
                     else:
-                        libt.console_put_char_ex(sketch1, i, j, ".",
+                        libt.console_put_char_ex(game_map, i, j, ".",
                                                  COLOURS['lit_ground'], 
                                                  COLOURS['bg'])
                 elif world[i][j].seen:
                     if fog:
-                        libt.console_put_char_ex(sketch1, i, j, "#", 
+                        libt.console_put_char_ex(game_map, i, j, "#", 
                                                  COLOURS['wall'], 
                                                  COLOURS['bg'])
                     else:
-                        libt.console_put_char_ex(sketch1, i, j, ".", 
+                        libt.console_put_char_ex(game_map, i, j, ".", 
                                                  COLOURS['ground'], 
                                                  COLOURS['bg'])
 
+    # Draw entities
     for lst in map_objects:
         draw_obj(map_objects[lst])
 
-    libt.console_blit(sketch1, 0, 0, config.SCREEN_WIDTH, 
-                      config.SCREEN_HEIGHT, 0, 0, 0)
-    #libt.console_set_default_foreground(sketch1, libt.white)
-    libt.console_print_ex(0, 1, config.SCREEN_HEIGHT - 2, libt.BKGND_NONE, libt.LEFT,
-        'HP: ' + str(player.hp) + '/' + str(player.max_hp))
+    # Draw GUI
+    libt.console_set_default_background(gui, COLOURS['gui_bg'])
+    libt.console_clear(gui)
+
+    fillup_bar(5, 5, "HP", player.hp, player.max_hp, 
+               COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
+
+    # Blit the consoles
+    libt.console_blit(game_map, 0, 0, 
+                      config.MAP_WIDTH, config.MAP_HEIGHT, 0, 
+                      0, 0)
+    libt.console_blit(gui, 0, 0,
+                      config.GUI_WIDTH, config.GUI_HEIGHT, 0, 
+                      0, config.MAP_HEIGHT)
 
 
 def keybinds():
@@ -461,6 +501,28 @@ def keybinds():
             player.move_or_attack(1, 0)
         else:
             return "no_move"
+
+
+def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
+    """
+    Creates a bar that shows the current value 
+    out of the given maximum.
+    """
+    filled_width = int(float(val) / max_val * config.BAR_WIDTH)
+
+    libt.console_set_default_background(gui, back_colour)
+    libt.console_rect(gui, x, y, config.BAR_WIDTH, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+
+    libt.console_set_default_background(gui, bar_colour)
+    if filled_width > 0:
+        libt.console_rect(gui, x, y, filled_width, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+
+    bar_midpoint = (int(config.BAR_WIDTH/2 + x), int(config.BAR_HEIGHT/2 + y))
+
+    libt.console_set_default_foreground(gui, COLOURS['text'])
+    libt.console_print_ex(gui, bar_midpoint[0], bar_midpoint[1], libt.BKGND_NONE, libt.CENTER,
+                          "%s: %d/%d" % (name, val, max_val))
+
 
 # Class instances
 player = Player(0, 0, "Player")
