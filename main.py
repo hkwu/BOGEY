@@ -112,7 +112,7 @@ class CombatEntity(Entity):
             self.hp -= damage
 
     def deal_damage(self, target):
-        """Deals damage to target entity and returns damage done."""
+        """Deals damage to target entity."""
         if hasattr(target, "hp"):
             dmg = random.randrange(self.atk + 1)
             target.take_damage(dmg)
@@ -137,11 +137,16 @@ class Player(CombatEntity):
         for mob in map_objects['mobs']:
             if (mob.x == self.x + dx and 
                 mob.y == self.y + dy and mob.solid):
-                add_msg("You attack %s for %d damage!" % (mob.name, self.deal_damage(mob)), 
-                        COLOURS['player_atk_text'])
+                dmg = self.deal_damage(mob)
+
+                if dmg:
+                    add_msg("You attack %s for %d damage!" % (mob.name, dmg), 
+                            COLOURS['player_atk_text'])
+                else:
+                    add_msg("You missed!", COLOURS['player_atk_text'])
 
                 if mob.state == DEAD:
-                    add_msg("You killed the %s!" % mob.name, 
+                    add_msg("You killed %s!" % mob.name, 
                             COLOURS['player_kill_text'])
         else:
             fov_refresh = True
@@ -149,9 +154,10 @@ class Player(CombatEntity):
 
     def die(self):
         global game_state
-        game_state = "dead"
-        self.char = "%"
-        add_msg("You have died!", COLOURS['player_die_text'])
+
+        if game_state != DEAD:
+            game_state = DEAD
+            self.char = "%"
 
 
 class Mob(CombatEntity):
@@ -213,9 +219,20 @@ class Mob(CombatEntity):
         move_to_make = None
 
         for posn in possible_posn:
-            if self.x + posn[0] == player.x and self.y + posn[1] == player.y:
-                add_msg("%s attacks you for %d damage!" % (self.name, self.deal_damage(player)), 
-                        COLOURS['mob_atk_text'])
+            if (self.x + posn[0] == player.x and 
+                self.y + posn[1] == player.y and 
+                game_state != DEAD):
+                dmg = self.deal_damage(player)
+
+                if dmg:
+                    add_msg("%s attacks you for %d damage!" % (self.name, dmg), 
+                            COLOURS['mob_atk_text'])
+                else:
+                    add_msg("%s missed!" % self.name, COLOURS['mob_atk_text'])
+
+                if game_state == DEAD:
+                    add_msg("%s killed you!" % self.name, 
+                            COLOURS['player_die_text'])
             elif not is_solid(self.x + posn[0], self.y + posn[1]):
                 new_dist = linear_dist(self.x + posn[0], target.x, 
                                        self.y + posn[1], target.y)
@@ -431,16 +448,19 @@ def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
     filled_width = int(float(val) / max_val * config.BAR_WIDTH)
 
     libt.console_set_default_background(gui, back_colour)
-    libt.console_rect(gui, x, y, config.BAR_WIDTH, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+    libt.console_rect(gui, x, y, config.BAR_WIDTH, config.BAR_HEIGHT, 
+                      False, libt.BKGND_SCREEN)
 
     libt.console_set_default_background(gui, bar_colour)
     if filled_width > 0:
-        libt.console_rect(gui, x, y, filled_width, config.BAR_HEIGHT, False, libt.BKGND_SCREEN)
+        libt.console_rect(gui, x, y, filled_width, config.BAR_HEIGHT, 
+                          False, libt.BKGND_SCREEN)
 
     bar_midpoint = (int(config.BAR_WIDTH/2 + x), int(config.BAR_HEIGHT/2 + y))
 
     libt.console_set_default_foreground(gui, COLOURS['text'])
-    libt.console_print_ex(gui, bar_midpoint[0], bar_midpoint[1], libt.BKGND_NONE, libt.CENTER,
+    libt.console_print_ex(gui, bar_midpoint[0], bar_midpoint[1], 
+                          libt.BKGND_NONE, libt.CENTER,
                           "%s: %d/%d" % (name, val, max_val))
 
 
