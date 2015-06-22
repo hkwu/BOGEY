@@ -473,7 +473,7 @@ def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
 
 def add_msg(msg, colour=COLOURS['text']):
     """Adds a message to the message box."""
-    wrapped = textwrap.wrap(msg, config.MSG_WIDTH - config.BORDER_WIDTH)
+    wrapped = textwrap.wrap(msg, config.MSG_WIDTH - config.BORDER_WIDTH*2)
 
     for line in wrapped:
         if len(game_msgs) == config.MSG_HEIGHT - config.BORDER_WIDTH:
