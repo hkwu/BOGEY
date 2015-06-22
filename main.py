@@ -30,9 +30,11 @@ COLOURS = {
     'player': libt.black,
     'mob': libt.red,
     'gui_bg': libt.black,
+    'gui_border': libt.darkest_grey,
     'bar_hp': libt.dark_red,
     'bar_hp_unfilled': libt.darker_red,
     'text': libt.lightest_grey,
+    'mob_behaviour_text': libt.amber,
     'player_atk_text': libt.grey,
     'mob_atk_text': libt.flame,
     'player_kill_text': libt.green,
@@ -148,6 +150,7 @@ class Player(CombatEntity):
                 if mob.state == DEAD:
                     add_msg("You killed %s!" % mob.name, 
                             COLOURS['player_kill_text'])
+                    mob.name += "'s remains"
         else:
             fov_refresh = True
             self.move(dx, dy)
@@ -172,7 +175,6 @@ class Mob(CombatEntity):
                               COLOURS['mob'], True, hp, atk)
         self.morale = morale
         self.state = state
-        self.previous_state = None
         self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
                             [self.not_in_sight, self.in_sight_and_healthy, None]]
@@ -277,11 +279,13 @@ class Mob(CombatEntity):
                 x += 1
                 continue
             elif check():
-                self.previous_state = self.state
                 self.state = x
 
-                if self.previous_state != self.state and self.state == RUN:
-                    add_msg("%s runs away!" % self.name, COLOURS['text'])
+                # Some messages when state changes
+                if self.state == CHASE:
+                    add_msg("%s sees you!" % self.name, COLOURS['mob_behaviour_text'])
+                elif self.state == RUN:
+                    add_msg("%s runs away!" % self.name, COLOURS['mob_behaviour_text'])
 
             x += 1
 
@@ -469,10 +473,10 @@ def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
 
 def add_msg(msg, colour=COLOURS['text']):
     """Adds a message to the message box."""
-    wrapped = textwrap.wrap(msg, config.MSG_WIDTH - 5)
+    wrapped = textwrap.wrap(msg, config.MSG_WIDTH - config.BORDER_WIDTH)
 
     for line in wrapped:
-        if len(game_msgs) == config.MSG_HEIGHT:
+        if len(game_msgs) == config.MSG_HEIGHT - config.BORDER_WIDTH:
             del game_msgs[0]
         game_msgs.append((line, colour))
 
@@ -486,7 +490,10 @@ def objects_under_mouse():
     for entity in map_objects['mobs']:
         if (entity.x == x and entity.y == y and 
             libt.map_is_in_fov(fov_map, entity.x, entity.y)):
-            names.append("%s [%d/%d]" % (entity.name, entity.hp, entity.max_hp))
+            if entity.state == DEAD:
+                names.append("%s" % entity.name)
+            else:
+                names.append("%s [%d/%d]" % (entity.name, entity.hp, entity.max_hp))
 
     names = ", ".join(names)
     return names.capitalize()
@@ -553,17 +560,38 @@ def render_obj():
     libt.console_set_default_background(gui, COLOURS['gui_bg'])
     libt.console_clear(gui)
 
-    fillup_bar(5, 5, "HP", player.hp, player.max_hp, 
-               COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
+    upper_height = config.BORDER_WIDTH / 2
+    left_height = config.GUI_HEIGHT - upper_height*2
+
+    libt.console_set_default_background(gui, COLOURS['gui_border'])
+    # Upper border
+    libt.console_rect(gui, 0, 0, config.GUI_WIDTH, upper_height, 
+                      False, libt.BKGND_SCREEN)
+    # Lower border
+    libt.console_rect(gui, 0, config.GUI_HEIGHT - config.BORDER_WIDTH/2,  
+                      config.GUI_WIDTH, upper_height, False, libt.BKGND_SCREEN)
+    # Left border
+    libt.console_rect(gui, 0, upper_height, config.BORDER_WIDTH / 2, 
+                      left_height, False, libt.BKGND_SCREEN)
+    # Right border
+    libt.console_rect(gui, config.GUI_WIDTH - config.BORDER_WIDTH/2, upper_height, 
+                      config.BORDER_WIDTH / 2, left_height, False, libt.BKGND_SCREEN)
+    # Middle border
+    libt.console_rect(gui, config.GUI_WIDTH/2 - config.BORDER_WIDTH/2, upper_height, 
+                      config.BORDER_WIDTH, left_height, False, libt.BKGND_SCREEN)
+
+    # Status bars
+    fillup_bar(config.BORDER_WIDTH, config.BORDER_WIDTH, "HP", player.hp, 
+               player.max_hp, COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
 
     libt.console_set_default_foreground(gui, COLOURS['text'])
     libt.console_print_ex(gui, config.GUI_WIDTH / 2, 0,
                           libt.BKGND_NONE, libt.CENTER, objects_under_mouse())
 
-    y = 1
+    y = config.BORDER_WIDTH
     for (msg, colour) in game_msgs:
         libt.console_set_default_foreground(gui, colour)
-        libt.console_print_ex(gui, config.MSG_WIDTH + 5, y, 
+        libt.console_print_ex(gui, config.MSG_WIDTH + config.BORDER_WIDTH, y, 
                               libt.BKGND_NONE, libt.LEFT, msg)
         y += 1
 
