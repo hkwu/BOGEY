@@ -280,6 +280,9 @@ class Mob(CombatEntity):
                 self.previous_state = self.state
                 self.state = x
 
+                if self.previous_state != self.state and self.state == RUN:
+                    add_msg("%s runs away!" % self.name, COLOURS['text'])
+
             x += 1
 
         if self.state == HOLD:
@@ -474,6 +477,21 @@ def add_msg(msg, colour=COLOURS['text']):
         game_msgs.append((line, colour))
 
 
+def objects_under_mouse():
+    """Returns list of entities that mouse is hovering over."""
+    x = mouse.cx
+    y = mouse.cy
+    names = []
+
+    for entity in map_objects['mobs']:
+        if (entity.x == x and entity.y == y and 
+            libt.map_is_in_fov(fov_map, entity.x, entity.y)):
+            names.append("%s [%d/%d]" % (entity.name, entity.hp, entity.max_hp))
+
+    names = ", ".join(names)
+    return names.capitalize()
+
+
 ######################################
 
 # Other functions
@@ -538,6 +556,10 @@ def render_obj():
     fillup_bar(5, 5, "HP", player.hp, player.max_hp, 
                COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
 
+    libt.console_set_default_foreground(gui, COLOURS['text'])
+    libt.console_print_ex(gui, config.GUI_WIDTH / 2, 0,
+                          libt.BKGND_NONE, libt.CENTER, objects_under_mouse())
+
     y = 1
     for (msg, colour) in game_msgs:
         libt.console_set_default_foreground(gui, colour)
@@ -557,7 +579,6 @@ def render_obj():
 def keybinds():
     """Handles keyboard input from the user."""
     global fov_refresh
-    key = libt.console_wait_for_keypress(True)
 
     if key.vk == libt.KEY_ENTER and key.lalt:
         libt.console_set_fullscreen(not libt.console_is_fullscreen())
@@ -565,13 +586,13 @@ def keybinds():
         return "exit"
 
     if game_state == "play":
-        if libt.console_is_key_pressed(libt.KEY_UP):
+        if key.vk == libt.KEY_UP:
             player.move_or_attack(0, -1)
-        elif libt.console_is_key_pressed(libt.KEY_DOWN):
+        elif key.vk == libt.KEY_DOWN:
             player.move_or_attack(0, 1)
-        elif libt.console_is_key_pressed(libt.KEY_LEFT):
+        elif key.vk == libt.KEY_LEFT:
             player.move_or_attack(-1, 0)
-        elif libt.console_is_key_pressed(libt.KEY_RIGHT):
+        elif key.vk == libt.KEY_RIGHT:
             player.move_or_attack(1, 0)
         else:
             return "no_move"
@@ -599,9 +620,13 @@ for i in range(config.MAP_WIDTH):
 game_state = "play"
 player_action = None
 game_msgs = []
+mouse = libt.Mouse()
+key = libt.Key()
+libt.sys_set_fps(60)
 
 # Main loop
 while not libt.console_is_window_closed():
+    libt.sys_check_for_event(libt.EVENT_KEY_PRESS | libt.EVENT_MOUSE, key, mouse)
     render_obj()
     libt.console_flush()
 
