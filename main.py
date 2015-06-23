@@ -17,7 +17,7 @@ libt.console_set_custom_font("dejavu10x10_gs_tc.png",
                              libt.FONT_TYPE_GREYSCALE 
                              | libt.FONT_LAYOUT_TCOD)
 libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
-                       "Bogey", False)
+                       "BOGEY", False)
 libt.console_credits()
 
 # Keypress delay
@@ -454,6 +454,32 @@ def make_map():
 # GUI functions
 
 ######################################
+def borders():
+    """Draws borders around the info panel."""
+    libt.console_set_default_background(gui, COLOURS['gui_bg'])
+    libt.console_clear(gui)
+
+    upper_height = config.BORDER_WIDTH / 2
+    left_height = config.GUI_HEIGHT - upper_height*2
+
+    libt.console_set_default_background(gui, COLOURS['gui_border'])
+    # Upper border
+    libt.console_rect(gui, 0, 0, config.GUI_WIDTH, upper_height, 
+                      False, libt.BKGND_SCREEN)
+    # Lower border
+    libt.console_rect(gui, 0, config.GUI_HEIGHT - config.BORDER_WIDTH/2,  
+                      config.GUI_WIDTH, upper_height, False, libt.BKGND_SCREEN)
+    # Left border
+    libt.console_rect(gui, 0, upper_height, config.BORDER_WIDTH / 2, 
+                      left_height, False, libt.BKGND_SCREEN)
+    # Right border
+    libt.console_rect(gui, config.GUI_WIDTH - config.BORDER_WIDTH/2, upper_height, 
+                      config.BORDER_WIDTH / 2, left_height, False, libt.BKGND_SCREEN)
+    # Middle border
+    libt.console_rect(gui, config.GUI_WIDTH/2 - config.BORDER_WIDTH/2, upper_height, 
+                      config.BORDER_WIDTH, left_height, False, libt.BKGND_SCREEN)
+
+
 def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
     """
     Creates a bar that shows the current value 
@@ -478,6 +504,14 @@ def fillup_bar(x, y, name, val, max_val, bar_colour, back_colour):
                           "%s: %d/%d" % (name, val, max_val))
 
 
+def stat_bars():
+    """Creates the status bars."""
+    # HP bar
+    fillup_bar(config.BORDER_WIDTH, config.BORDER_WIDTH, "HP", player.hp, 
+               player.max_hp, COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
+    libt.console_set_default_foreground(gui, COLOURS['text'])
+
+
 def add_msg(msg, colour=COLOURS['text']):
     """Adds a message to the message box."""
     wrapped = textwrap.wrap(msg, config.MSG_WIDTH - config.BORDER_WIDTH*2)
@@ -486,6 +520,16 @@ def add_msg(msg, colour=COLOURS['text']):
         if len(game_msgs) == config.MSG_HEIGHT - config.BORDER_WIDTH:
             del game_msgs[0]
         game_msgs.append((line, colour))
+
+
+def msg_box():
+    """Draws messages in the message box."""
+    y = config.BORDER_WIDTH
+    for (msg, colour) in game_msgs:
+        libt.console_set_default_foreground(gui, colour)
+        libt.console_print_ex(gui, config.MSG_WIDTH + config.BORDER_WIDTH, y, 
+                              libt.BKGND_NONE, libt.LEFT, msg)
+        y += 1
 
 
 def objects_under_mouse():
@@ -523,7 +567,7 @@ def clear_obj(lst):
         obj.clear()
 
 
-def render_obj():
+def render_all():
     """Places objects and tiles on the console display."""
     global fov_refresh
     
@@ -564,43 +608,11 @@ def render_obj():
         draw_obj(map_objects[lst])
 
     # Draw GUI
-    libt.console_set_default_background(gui, COLOURS['gui_bg'])
-    libt.console_clear(gui)
-
-    upper_height = config.BORDER_WIDTH / 2
-    left_height = config.GUI_HEIGHT - upper_height*2
-
-    libt.console_set_default_background(gui, COLOURS['gui_border'])
-    # Upper border
-    libt.console_rect(gui, 0, 0, config.GUI_WIDTH, upper_height, 
-                      False, libt.BKGND_SCREEN)
-    # Lower border
-    libt.console_rect(gui, 0, config.GUI_HEIGHT - config.BORDER_WIDTH/2,  
-                      config.GUI_WIDTH, upper_height, False, libt.BKGND_SCREEN)
-    # Left border
-    libt.console_rect(gui, 0, upper_height, config.BORDER_WIDTH / 2, 
-                      left_height, False, libt.BKGND_SCREEN)
-    # Right border
-    libt.console_rect(gui, config.GUI_WIDTH - config.BORDER_WIDTH/2, upper_height, 
-                      config.BORDER_WIDTH / 2, left_height, False, libt.BKGND_SCREEN)
-    # Middle border
-    libt.console_rect(gui, config.GUI_WIDTH/2 - config.BORDER_WIDTH/2, upper_height, 
-                      config.BORDER_WIDTH, left_height, False, libt.BKGND_SCREEN)
-
-    # Status bars
-    fillup_bar(config.BORDER_WIDTH, config.BORDER_WIDTH, "HP", player.hp, 
-               player.max_hp, COLOURS['bar_hp'], COLOURS['bar_hp_unfilled'])
-
-    libt.console_set_default_foreground(gui, COLOURS['text'])
-    libt.console_print_ex(gui, config.GUI_WIDTH / 2, 0,
+    borders()
+    stat_bars()
+    msg_box()
+    libt.console_print_ex(gui, config.GUI_WIDTH / 2, 1,
                           libt.BKGND_NONE, libt.CENTER, objects_under_mouse())
-
-    y = config.BORDER_WIDTH
-    for (msg, colour) in game_msgs:
-        libt.console_set_default_foreground(gui, colour)
-        libt.console_print_ex(gui, config.MSG_WIDTH + config.BORDER_WIDTH, y, 
-                              libt.BKGND_NONE, libt.LEFT, msg)
-        y += 1
 
     # Blit the consoles
     libt.console_blit(game_map, 0, 0, 
@@ -633,36 +645,54 @@ def keybinds():
             return "no_move"
 
 
-# Class instances
-player = Player(0, 0, "Player")
+def setup():
+    """Sets up the initial game state."""
+    global player, game_msgs, mouse, key
 
-# Map objects
-map_objects = {
-    'mobs': [],
-    'characters': [player]
-}
+    player = Player(0, 0, "Player")
+    game_msgs = []
+    key = libt.Key()
+    mouse = libt.Mouse()
+    libt.sys_set_fps(60)
 
-# Begin initialization
-fov_refresh = True
-fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
-make_map()
 
-for i in range(config.MAP_WIDTH):
-    for j in range(config.MAP_HEIGHT):
-        libt.map_set_properties(fov_map, i, j, 
-                                not world[i][j].fog, world[i][j].passable)
+def initialize():
+    """Initializes game state for each new map."""
+    global map_objects
+    global fov_refresh, fov_map
+    global game_state, player_action, game_msgs
+    
 
-game_state = "play"
-player_action = None
-game_msgs = []
-mouse = libt.Mouse()
-key = libt.Key()
-libt.sys_set_fps(60)
+    # Map objects
+    map_objects = {
+        'mobs': [],
+        'characters': [player]
+    }
+
+    # Begin initialization
+    fov_refresh = True
+    fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+    make_map()
+
+    for i in range(config.MAP_WIDTH):
+        for j in range(config.MAP_HEIGHT):
+            libt.map_set_properties(fov_map, i, j, 
+                                    not world[i][j].fog, world[i][j].passable)
+
+    game_state = "play"
+    player_action = None
+
+######################################
 
 # Main loop
+
+######################################
+setup()
+initialize()
+
 while not libt.console_is_window_closed():
     libt.sys_check_for_event(libt.EVENT_KEY_PRESS | libt.EVENT_MOUSE, key, mouse)
-    render_obj()
+    render_all()
     libt.console_flush()
 
     for lst in map_objects:
