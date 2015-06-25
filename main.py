@@ -45,7 +45,8 @@ COLOURS = {
     'player_atk_text': libt.grey,
     'mob_atk_text': libt.flame,
     'player_kill_text': libt.green,
-    'player_die_text': libt.white
+    'player_die_text': libt.white,
+    'weapons': libt.copper
 }
 
 # Entity states
