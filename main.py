@@ -611,7 +611,9 @@ def render_all():
     borders()
     stat_bars()
     msg_box()
-    libt.console_print_ex(gui, config.GUI_WIDTH / 2, 1,
+
+    libt.console_set_default_foreground(gui, COLOURS['text'])
+    libt.console_print_ex(gui, config.GUI_WIDTH / 2, 0,
                           libt.BKGND_NONE, libt.CENTER, objects_under_mouse())
 
     # Blit the consoles
