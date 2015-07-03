@@ -49,6 +49,11 @@ COLOURS = {
     'weapons': libt.copper
 }
 
+# Game states
+EXIT = "exit"
+PLAY = "play"
+NO_MOVE = "no_move"
+
 # Entity states
 HOLD = 0
 CHASE = 1
@@ -175,7 +180,7 @@ class Mob(CombatEntity):
     """
     Hostile mob class.
 
-    morale: probability for entity to stand its ground in ground
+    morale: probability for entity to stand its ground in combat
     state: defines AI behaviour of entity
     """
     def __init__(self, x, y, name, char, hp, atk, morale, state=HOLD):
@@ -633,9 +638,9 @@ def keybinds():
     if key.vk == libt.KEY_ENTER and key.lalt:
         libt.console_set_fullscreen(not libt.console_is_fullscreen())
     elif key.vk == libt.KEY_ESCAPE:
-        return "exit"
+        return EXIT
 
-    if game_state == "play":
+    if game_state == PLAY:
         if key.vk == libt.KEY_UP:
             player.move_or_attack(0, -1)
         elif key.vk == libt.KEY_DOWN:
@@ -645,7 +650,7 @@ def keybinds():
         elif key.vk == libt.KEY_RIGHT:
             player.move_or_attack(1, 0)
         else:
-            return "no_move"
+            return NO_MOVE
 
 
 def setup():
@@ -682,7 +687,7 @@ def initialize():
             libt.map_set_properties(fov_map, i, j, 
                                     not world[i][j].fog, world[i][j].passable)
 
-    game_state = "play"
+    game_state = PLAY
     player_action = None
 
 ######################################
@@ -702,8 +707,8 @@ while not libt.console_is_window_closed():
         clear_obj(map_objects[lst])
 
     player_action = keybinds()
-    if player_action == "exit":
+    if player_action == EXIT:
         break
-    elif game_state == "play" and player_action != "no_move":
+    elif game_state == PLAY and player_action != NO_MOVE:
         for mob in map_objects['mobs']:
             mob.action_handler()
