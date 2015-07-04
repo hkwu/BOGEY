@@ -1,3 +1,8 @@
+#
+# config.py
+# Game settings
+#
+
 # Console dimensions
 SCREEN_WIDTH = 150
 SCREEN_HEIGHT = 80
