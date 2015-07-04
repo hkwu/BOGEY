@@ -100,13 +100,13 @@ class Player(CombatEntity):
 
                 if dmg:
                     self.handler.message_box.add_msg("You attack %s for %d damage!" % (mob.name, dmg), 
-                            data.COLOURS['player_atk_text'])
+                                                     data.COLOURS['player_atk_text'])
                 else:
                     self.handler.message_box.add_msg("You missed!", data.COLOURS['player_atk_text'])
 
                 if mob.state == data.DEAD:
                     self.handler.message_box.add_msg("You killed %s!" % mob.name, 
-                            data.COLOURS['player_kill_text'])
+                                                     data.COLOURS['player_kill_text'])
                     mob.name += "'s remains"
         else:
             self.handler.fov_refresh = True
@@ -184,7 +184,8 @@ class Mob(CombatEntity):
                     self.handler.message_box.add_msg("%s attacks you for %d damage!" % (self.name, dmg), 
                                                      data.COLOURS['mob_atk_text'])
                 else:
-                    self.handler.message_box.add_msg("%s missed!" % self.name, data.COLOURS['mob_atk_text'])
+                    self.handler.message_box.add_msg("%s missed!" % self.name, 
+                                                     data.COLOURS['mob_atk_text'])
 
                 if self.handler.game_state == data.DEAD:
                     self.handler.message_box.add_msg("%s killed you!" % self.name,
@@ -237,9 +238,11 @@ class Mob(CombatEntity):
 
                 # Some messages when state changes
                 if self.state == data.CHASE:
-                    self.handler.message_box.add_msg("%s sees you!" % self.name, data.COLOURS['mob_behaviour_text'])
+                    self.handler.message_box.add_msg("%s sees you!" % self.name, 
+                                                     data.COLOURS['mob_behaviour_text'])
                 elif self.state == data.RUN:
-                    self.handler.message_box.add_msg("%s runs away!" % self.name, data.COLOURS['mob_behaviour_text'])
+                    self.handler.message_box.add_msg("%s runs away!" % self.name, 
+                                                     data.COLOURS['mob_behaviour_text'])
 
             x += 1
 

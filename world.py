@@ -9,6 +9,7 @@ import entities
 
 
 class Tile(object):
+    """A single coordinate on the map."""
     def __init__(self, passable, fog=False, seen=False):
         self.passable = passable
 
@@ -20,6 +21,7 @@ class Tile(object):
 
 
 class Room(object):
+    """A block of passable area in the map."""
     def __init__(self, x, y, w, h):
         self.x1 = x
         self.y1 = y
@@ -38,6 +40,7 @@ class Room(object):
 
 
 class Map(object):
+    """Class that stores the game's map information."""
     def __init__(self):
         self.map = []
         self.rooms = []

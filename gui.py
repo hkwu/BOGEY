@@ -10,6 +10,7 @@ import data
 
 
 class GUIElement(object):
+    """Base class for GUI elements."""
     def __init__(self):
         pass
 
@@ -18,6 +19,7 @@ class GUIElement(object):
 
 
 class Border(GUIElement):
+    """Border that surrounds the GUI."""
     def __init__(self):
         GUIElement.__init__(self)
 
@@ -70,6 +72,17 @@ class Border(GUIElement):
 
 
 class StatusBar(GUIElement):
+    """
+    Class for status bars.
+
+    x: x-coordinate of the bar
+    y: y-coordinate of the bar
+    name: name displayed for the bar
+    val: current value out of the maximum
+    max_val: the largest value the bar can contain
+    bar_colour: colour of the bar portion that is filled
+    back_colour: colour of the bar portion that is unfilled
+    """
     def __init__(self, x, y, name, val, max_val, bar_colour, back_colour):
         GUIElement.__init__(self)
         self.x = x
@@ -107,6 +120,7 @@ class StatusBar(GUIElement):
 
 
 class HealthBar(StatusBar):
+    """The health bar."""
     def __init__(self):
         StatusBar.__init__(self, config.BORDER_WIDTH, config.BORDER_WIDTH, "HP", 
                            self.handler.player.hp, self.handler.player.max_hp, 
@@ -114,6 +128,7 @@ class HealthBar(StatusBar):
 
 
 class MessageBox(GUIElement):
+    """Messages are displayed here."""
     def __init__(self):
         GUIElement.__init__(self)
         self.messages = []
