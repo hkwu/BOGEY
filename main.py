@@ -24,11 +24,7 @@ libt.console_set_keyboard_repeat(50, 100)
 # Limit FPS
 libt.sys_set_fps(60)
 
-######################################
-
 # Main loop
-
-######################################
 game = state.StateHandler()
 
 while not libt.console_is_window_closed():

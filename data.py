@@ -20,10 +20,11 @@ COLOURS = {
     'bar_hp_unfilled': libt.darker_red,
     'text': libt.lightest_grey,
     'mob_behaviour_text': libt.amber,
-    'player_atk_text': libt.grey,
     'mob_atk_text': libt.flame,
+    'player_atk_text': libt.grey,
     'player_kill_text': libt.green,
     'player_die_text': libt.white,
+    'player_item_text': libt.azure,
     'weapons': libt.copper
 }
 

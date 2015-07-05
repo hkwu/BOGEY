@@ -29,6 +29,7 @@ class Border(GUIElement):
         y = self.handler.mouse.cy
         names = []
 
+        # Names of mobs
         for entity in self.handler.map_objects['mobs']:
             if (entity.x == x and entity.y == y and 
                 libt.map_is_in_fov(self.handler.fov_map, entity.x, entity.y)):
@@ -36,6 +37,12 @@ class Border(GUIElement):
                     names.append("%s" % entity.name)
                 else:
                     names.append("%s [%d/%d]" % (entity.name, entity.hp, entity.max_hp))
+
+        # Names of items
+        for item in self.handler.map_objects['items']:
+            if (item.x == x and item.y == y and
+                libt.map_is_in_fov(self.handler.fov_map, item.x, item.y)):
+                names.append("%s" % item.name)
 
         names = ", ".join(names)
         return names.capitalize()

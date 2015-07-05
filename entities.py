@@ -1,10 +1,7 @@
-#############################################
 #
 # entities.py
-#
 # Classes for entities such as mobs and items
 #
-#############################################
 
 import libtcodpy as libt
 import math
@@ -50,8 +47,37 @@ class Entity(object):
             libt.console_put_char(self.handler.game_map, self.x, self.y, 
                                   " ", libt.BKGND_NONE)
 
+    def send_to_back(self, lst_of_entities):
+        """Moves entity to first index in respective list."""
+        self.handler.map_objects[lst_of_entities].remove(self)
+        self.handler.map_objects[lst_of_entities].insert(0, self)
 
-class CombatEntity(Entity):
+
+class LivingEntity(Entity):
+    """
+    Class for entities that are alive.
+
+    inv: inventory of the entity
+    """
+    def __init__(self, x, y, name, char, colour):
+        Entity.__init__(self, x, y, name, char, colour, True)
+        self.inv = []
+
+    def take(self):
+        """
+        Places the first item on the ground below the entity
+        into entity's inventory.
+        """
+        for item in self.handler.map_objects['items']:
+            if item.x == self.x and item.y == self.y:
+                self.handler.map_objects['items'].remove(item)
+                self.inv.append(item)
+                return item.name
+
+        return False
+
+
+class CombatEntity(LivingEntity):
     """
     Class for entities that engage in combat.
 
@@ -59,7 +85,7 @@ class CombatEntity(Entity):
     atk: attack strength of entity
     """
     def __init__(self, x, y, name, char, colour, hp, atk):
-        Entity.__init__(self, x, y, name, char, colour, True)
+        LivingEntity.__init__(self, x, y, name, char, colour)
         self.hp = hp
         self.max_hp = hp
         self.atk = atk
@@ -117,6 +143,16 @@ class Player(CombatEntity):
             self.handler.game_state = data.DEAD
             self.char = "%"
 
+    def player_take(self):
+        """
+        Player-specific method for taking items. Will 
+        generate a message on successful take.
+        """
+        taken = self.take()
+        if taken:
+            self.handler.message_box.add_msg("You take the %s!" % taken,
+                                             data.COLOURS['player_item_text'])
+
 
 class Mob(CombatEntity):
     """
@@ -134,16 +170,11 @@ class Mob(CombatEntity):
                             [self.not_in_sight, None, self.in_sight_and_not_healthy],
                             [self.not_in_sight, self.in_sight_and_healthy, None]]
 
-    def send_to_back(self):
-        """Moves mob to first index in mobs list."""
-        self.handler.map_objects['mobs'].remove(self)
-        self.handler.map_objects['mobs'].insert(0, self)
-
     def die(self):
         self.char = "X"
         self.solid = False
         self.state = data.DEAD
-        self.send_to_back()
+        self.send_to_back('mobs')
 
     # Behavioural checks to switch between states
     def in_sight(self):
@@ -262,3 +293,38 @@ class Spider(Mob):
 class Skeleton(Mob):
     def __init__(self, x, y):
         Mob.__init__(self, x, y, "Skeleton", "S", 235, 20, 100)
+
+
+class Item(Entity):
+    """
+    Base item class.
+
+    weight: the amount of weight the item gets in the inventory
+    value: how much the item can be sold to NPCs
+    """
+    def __init__(self, x, y, name, char, colour, weight, value):
+        Entity.__init__(self, x, y, name, char, colour)
+        self.weight = weight
+        self.value = value
+
+
+class Weapon(Item):
+    """
+    Weapon class.
+
+    damage: amount of damage weapon deals
+    """
+    def __init__(self, x, y, name, weight, value, damage):
+        Item.__init__(self, x, y, name, "|", data.COLOURS['weapons'], weight, value)
+        self.damage = damage
+
+
+class Sword(Weapon):
+    """All the different types of swords."""
+    def __init__(self, x, y, name, weight, value, damage):
+        Weapon.__init__(self, x, y, name, weight, value, damage)
+
+
+class WoodenSword(Sword):
+    def __init__(self, x, y):
+        Sword.__init__(self, x, y, "Wooden Sword", 10, 50, 35)

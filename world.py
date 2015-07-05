@@ -99,12 +99,30 @@ class Map(object):
         while count > 0:
             entity_x = random.randrange(room.x1 + 1, room.x2)
             entity_y = random.randrange(room.y1 + 1, room.y2)
-            mob = random.randrange(3)
+            mob = random.randrange(5)
 
-            if mob == 0:
-                self.handler.map_objects['mobs'].append(entities.Spider(entity_x, entity_y))
-            elif mob == 1:
-                self.handler.map_objects['mobs'].append(entities.Skeleton(entity_x, entity_y))
+            if not self.is_solid(entity_x, entity_y):
+                if mob == 0:
+                    self.handler.map_objects['mobs'].append(entities.Spider(entity_x, entity_y))
+                elif mob == 1:
+                    self.handler.map_objects['mobs'].append(entities.Skeleton(entity_x, entity_y))
+
+            count -= 1
+
+    def add_items(self, room):
+        """Adds random items to a room."""
+        count = config.MAX_ITEMS
+
+        while count > 0:
+            item_x = random.randrange(room.x1 + 1, room.x2)
+            item_y = random.randrange(room.y1 + 1, room.y2)
+            item = random.randrange(3)
+
+            if not self.is_solid(item_x, item_y):
+                if item == 0:
+                    new = entities.WoodenSword(item_x, item_y)
+                    self.handler.map_objects['items'].append(new)
+                    new.send_to_back('items')
 
             count -= 1
 
@@ -147,10 +165,12 @@ class Map(object):
                 self.rooms.append(new)
                 self.make_room(new)
                 self.add_entities(new)
+                self.add_items(new)
             elif not intersected:
                 num_rooms += 1
                 self.rooms.append(new)
                 self.make_room(new)
                 self.add_entities(new)
+                self.add_items(new)
                 self.connect_rooms(self.rooms[num_rooms - 2], 
                                    self.rooms[num_rooms - 1])

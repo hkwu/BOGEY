@@ -45,6 +45,7 @@ class StateHandler(object):
 
         # Map objects
         self.map_objects = {
+            'items': [],
             'mobs': [],
             'characters': [self.player]
         }
@@ -79,6 +80,11 @@ class StateHandler(object):
             elif self.key.vk == libt.KEY_RIGHT:
                 self.player.move_or_attack(1, 0)
             else:
+                char = chr(self.key.c)
+
+                if char == "g":
+                    self.player.player_take()
+
                 return data.NO_MOVE
 
     def draw_obj(self, lst):
