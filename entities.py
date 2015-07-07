@@ -3,9 +3,11 @@
 # Classes for entities such as mobs and items
 #
 
-import libtcodpy as libt
 import math
 import random
+
+import libtcodpy as libt
+
 import data
 
 
@@ -108,7 +110,7 @@ class CombatEntity(LivingEntity):
     # Placeholder method to be overwitten in child classes
     def die(self):
         """Handles death of the entity."""
-        return
+        pass
 
 
 class Player(CombatEntity):
@@ -302,10 +304,15 @@ class Item(Entity):
     weight: the amount of weight the item gets in the inventory
     value: how much the item can be sold to NPCs
     """
-    def __init__(self, x, y, name, char, colour, weight, value):
+    def __init__(self, x, y, name, char, colour, weight, value, usable=False):
         Entity.__init__(self, x, y, name, char, colour)
         self.weight = weight
         self.value = value
+        self.usable = usable
+
+    def use(self):
+        """Uses the item."""
+        pass
 
 
 class Weapon(Item):
@@ -315,7 +322,8 @@ class Weapon(Item):
     damage: amount of damage weapon deals
     """
     def __init__(self, x, y, name, weight, value, damage):
-        Item.__init__(self, x, y, name, "|", data.COLOURS['weapons'], weight, value)
+        Item.__init__(self, x, y, name, "|", 
+                      data.COLOURS['weapons'], weight, value, True)
         self.damage = damage
 
 

@@ -4,6 +4,7 @@
 #
 
 import random
+
 import config
 import entities
 

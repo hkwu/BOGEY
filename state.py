@@ -3,7 +3,10 @@
 # Handles interactions between game modules
 #
 
+import collections
+
 import libtcodpy as libt
+
 import config
 import data
 import entities
@@ -43,13 +46,11 @@ class StateHandler(object):
         self.health_bar = gui.HealthBar()
         self.message_box = gui.MessageBox()
 
-        # Map objects
-        self.map_objects = {
-            'items': [],
-            'mobs': [],
-            'characters': [self.player]
-        }
-
+        # Map objects, OrderedDict ensures proper draw order
+        self.map_objects = collections.OrderedDict([('items', []), 
+                                                    ('mobs', []), 
+                                                    ('characters', [self.player])])
+        
         self.world.make_map()
 
         # Keep track of game state and player action
@@ -84,6 +85,10 @@ class StateHandler(object):
 
                 if char == "g":
                     self.player.player_take()
+                elif char == "i":
+                    menu = gui.InventoryMenu()
+                    menu.draw()
+                    menu.select()
 
                 return data.NO_MOVE
 
