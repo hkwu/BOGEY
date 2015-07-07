@@ -169,6 +169,13 @@ class Overlay(GUIElement):
     header: title of the overlay
     width: width of the overlay
     height: height of the overlay
+    overlay: off-screen console for overlay
+    x: x-coordinate of top-left corner where overlay will be blitted 
+    onto root console
+    y: y-coordinate of top-left corner where overlay will be blitted
+    onto root console
+    header_height: number of vertical lines the wrapped title of the
+    overlay will occupy
     """
     def __init__(self, header, width, height):
         GUIElement.__init__(self)
