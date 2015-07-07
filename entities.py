@@ -5,9 +5,7 @@
 
 import math
 import random
-
 import libtcodpy as libt
-
 import data
 
 

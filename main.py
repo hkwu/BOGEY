@@ -6,7 +6,6 @@
 ##############################################
 
 import libtcodpy as libt
-
 import config
 import data
 import state

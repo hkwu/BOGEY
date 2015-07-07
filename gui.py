@@ -4,9 +4,7 @@
 #
 
 import textwrap
-
 import libtcodpy as libt
-
 import config
 import data
 
@@ -191,8 +189,8 @@ class Overlay(GUIElement):
 
     def draw(self):
         libt.console_set_default_foreground(self.overlay, data.COLOURS['text'])
-        libt.console_print_rect_ex(self.overlay, 0, 0, self.width, self.height, 
-                                   libt.BKGND_NONE, libt.LEFT, self.header)
+        libt.console_print_ex(self.overlay, self.width/2 - 1, 0, libt.BKGND_NONE, 
+                              libt.CENTER, self.header)
         libt.console_blit(self.overlay, 0, 0, self.width, self.height, 
                           0, self.x, self.y, 1.0, 0.7)
 
@@ -205,13 +203,18 @@ class SelectMenu(Overlay):
     empty_options: string that is displayed when no options exist
     selection_index: zero-based index that player's selection is on
     max_selection: maximum index for selections
+    left_pad: minimum amount of space between left border and text
+    right_pad: minimum amount of space between right border and text
     """
-    def __init__(self, header, width, height, options, empty_options):
+    def __init__(self, header, width, height, options, empty_options,
+                 left_pad=1, right_pad=1):
         Overlay.__init__(self, header, width, height)
         self.options = options
         self.empty_options = empty_options
         self.selection_index = 0
         self.max_selection = len(options) - 1
+        self.left_pad = left_pad
+        self.right_pad = right_pad
 
     def draw(self):
         Overlay.draw(self)
@@ -224,18 +227,18 @@ class SelectMenu(Overlay):
                 if y - self.header_height == self.selection_index:
                     libt.console_set_default_foreground(self.overlay, 
                                                         data.COLOURS['selection_text'])
-                    libt.console_print_ex(self.overlay, 0, y,
+                    libt.console_print_ex(self.overlay, self.left_pad, y,
                                           libt.BKGND_NONE, libt.LEFT, text)
                 else:
                     libt.console_set_default_foreground(self.overlay, 
                                                         data.COLOURS['text'])
-                    libt.console_print_ex(self.overlay, 0, y, 
+                    libt.console_print_ex(self.overlay, self.left_pad, y, 
                                           libt.BKGND_NONE, libt.LEFT, text)
 
                 y += 1
         else:
-            libt.console_print_ex(self.overlay, 0, self.header_height, libt.BKGND_NONE, 
-                                  libt.LEFT, self.empty_options)
+            libt.console_print_ex(self.overlay, self.left_pad, self.header_height, 
+                                  libt.BKGND_NONE, libt.LEFT, self.empty_options)
 
         libt.console_blit(self.overlay, 0, 0, self.width, self.height, 
                           0, self.x, self.y, 1.0, 0.7)
@@ -267,7 +270,11 @@ class InventoryMenu(SelectMenu):
     def __init__(self):
         self.item_names = []
         for item in self.handler.player.inv:
-            self.item_names.append(item.name)
+            text = item.name
+            qty = "Qty: %d" % 99
+            padding = " " * (48 - len(text) - len(qty))
+            text += padding + qty
+            self.item_names.append(text)
 
         SelectMenu.__init__(self, "Inventory", 50, 50, self.item_names,
                             "Your inventory is empty.")
