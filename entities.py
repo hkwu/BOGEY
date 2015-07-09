@@ -61,7 +61,30 @@ class LivingEntity(Entity):
     """
     def __init__(self, x, y, name, char, colour):
         Entity.__init__(self, x, y, name, char, colour, True)
-        self.inv = []
+        self.inv = {}
+
+    def add_to_inv(self, item):
+        """Adds the item to entity's inventory."""
+        for obj in self.inv:
+            if obj.name == item.name:
+                self.inv[obj] += 1
+                break
+        else:
+            self.inv[item] = 1
+
+    def remove_from_inv(self, item):
+        """
+        Removes instance of item from inventory.
+        Requires that the item exists in entity's inventory.
+        """
+        for obj in self.inv:
+            if obj.name == item.name:
+                if self.inv[obj] > 1:
+                    self.inv[obj] -= 1
+                    break
+                else:
+                    self.inv.pop(obj)
+                    break
 
     def take(self):
         """
@@ -71,7 +94,7 @@ class LivingEntity(Entity):
         for item in self.handler.map_objects['items']:
             if item.x == self.x and item.y == self.y:
                 self.handler.map_objects['items'].remove(item)
-                self.inv.append(item)
+                self.add_to_inv(item)
                 return item.name
 
         return False
@@ -301,12 +324,17 @@ class Item(Entity):
 
     weight: the amount of weight the item gets in the inventory
     value: how much the item can be sold to NPCs
+    usable: whether or not the item has effects that can be triggered
+    stackable: if true, the item will be grouped with other items
+    that are the same in player's inventory
     """
-    def __init__(self, x, y, name, char, colour, weight, value, usable=False):
+    def __init__(self, x, y, name, char, colour, weight, value, 
+                 usable=False, stackable):
         Entity.__init__(self, x, y, name, char, colour)
         self.weight = weight
         self.value = value
         self.usable = usable
+        self.stackable = stackable
 
     def use(self):
         """Uses the item."""
@@ -321,7 +349,7 @@ class Weapon(Item):
     """
     def __init__(self, x, y, name, weight, value, damage):
         Item.__init__(self, x, y, name, "|", 
-                      data.COLOURS['weapons'], weight, value, True)
+                      data.COLOURS['weapons'], weight, value, True, False)
         self.damage = damage
 
 

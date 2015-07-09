@@ -122,9 +122,19 @@ class Map(object):
                 if item == 0:
                     new = entities.WoodenSword(item_x, item_y)
                     self.handler.map_objects['items'].append(new)
-                    new.send_to_back('items')
 
             count -= 1
+
+    def add_item_tile(self, x, y, item):
+        """
+        Adds item to the tile at (x, y). 
+        Requires that the tile is passable and that the item is 
+        an instance of an entity.
+        """
+        if not self.is_solid(x, y):
+            item.x = x
+            item.y = y
+            self.handler.map_objects['items'].append(item)
 
     def make_map(self):
         """Initializes the game world."""

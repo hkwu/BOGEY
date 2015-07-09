@@ -285,14 +285,16 @@ class SelectMenu(Overlay):
 class InventoryMenu(SelectMenu):
     """Popup that appears when entering inventory view."""
     def __init__(self):
+        self.header_height = 1
+        self.header_pad = 1
         self.pad = 1
         self.width = 40
-        self.height = config.ITEMS_PER_PAGE + 2*self.pad + 2
+        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
 
         self.item_names = []
         for item in self.handler.player.inv:
             text = item.name
-            qty = "Qty: %d" % 99 # debugging placeholder until item count is implemented
+            qty = "Qty: %d" % self.handler.player.inv[item]
             padding = " " * (self.width - len(text) - len(qty) - 2*self.pad)
             text += padding + qty
             self.item_names.append(text)
