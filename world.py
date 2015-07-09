@@ -99,7 +99,7 @@ class Map(object):
         while count > 0:
             entity_x = random.randrange(room.x1 + 1, room.x2)
             entity_y = random.randrange(room.y1 + 1, room.y2)
-            mob = random.randrange(5)
+            mob = random.randrange(10)
 
             if not self.is_solid(entity_x, entity_y):
                 if mob == 0:

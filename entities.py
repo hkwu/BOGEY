@@ -334,3 +334,8 @@ class Sword(Weapon):
 class WoodenSword(Sword):
     def __init__(self, x, y):
         Sword.__init__(self, x, y, "Wooden Sword", 10, 50, 35)
+
+
+class StoneSword(Sword):
+    def __init__(self, x, y):
+        Sword.__init__(self, x, y, "Stone Sword", 15, 75, 37)

@@ -11,6 +11,7 @@ import entities
 import gui
 import world
 
+import random
 
 class StateHandler(object):
     """
@@ -50,6 +51,13 @@ class StateHandler(object):
                                                     ('characters', [self.player])])
         
         self.world.make_map()
+
+        # DEBUG for inventory
+        # for i in range(20):
+        #     if random.randrange(2):
+        #         self.player.inv.append(entities.WoodenSword(self.player.x, self.player.y))
+        #     else:
+        #         self.player.inv.append(entities.StoneSword(self.player.x, self.player.y))
 
         # Keep track of game state and player action
         self.game_state = data.PLAY
