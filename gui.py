@@ -189,6 +189,10 @@ class Overlay(GUIElement):
         self.header_pad = 1
 
     def draw(self):
+        """
+        Adds the header to the overlay and blits its contents
+        to the root console.
+        """
         libt.console_set_default_foreground(self.overlay, data.COLOURS['text'])
         libt.console_print_ex(self.overlay, (self.width - 1)/2, self.header_pad, 
                               libt.BKGND_NONE, libt.CENTER, self.header)
@@ -222,6 +226,10 @@ class SelectMenu(Overlay):
         self.pad = pad
 
     def draw(self):
+        """
+        Prints all the given options up to the specified max_options,
+        then draws the background and header.
+        """
         if self.options:
             y = self.header_height + self.header_pad
             for option in self.options[self.slice_head:self.slice_tail]:
