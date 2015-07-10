@@ -99,6 +99,19 @@ class LivingEntity(Entity):
 
         return False
 
+    def drop(self, item):
+        """
+        Removes item from entity's inventory and places it
+        on the ground below.
+        """
+        for obj in self.handler.player.inv:
+            if obj.name == item.name:
+                self.remove_from_inv(obj)
+                self.handler.world.add_item_tile(self.x, self.y, obj)
+                return obj.name
+
+        return False
+
 
 class CombatEntity(LivingEntity):
     """
@@ -174,6 +187,16 @@ class Player(CombatEntity):
         taken = self.take()
         if taken:
             self.handler.message_box.add_msg("You take the %s!" % taken,
+                                             data.COLOURS['player_item_text'])
+
+    def player_drop(self, item):
+        """
+        Player-specific method for dropping items. Will
+        generate a message on successful drop.
+        """
+        dropped = self.drop(item)
+        if dropped:
+            self.handler.message_box.add_msg("You drop the %s!" % dropped,
                                              data.COLOURS['player_item_text'])
 
 
@@ -329,7 +352,7 @@ class Item(Entity):
     that are the same in player's inventory
     """
     def __init__(self, x, y, name, char, colour, weight, value, 
-                 usable=False, stackable):
+                 usable=False, stackable=True):
         Entity.__init__(self, x, y, name, char, colour)
         self.weight = weight
         self.value = value

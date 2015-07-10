@@ -45,7 +45,7 @@ class Border(GUIElement):
                 names.append("%s" % item.name)
 
         names = ", ".join(names)
-        return names.capitalize()
+        return names
 
     def draw(self):
         """Draws borders around the info panel."""
@@ -206,6 +206,8 @@ class SelectMenu(Overlay):
 
     options: the selections that can be made in the menu
     empty_options: string that is displayed when no options exist
+    column2: additional text that is aligned right of each option,
+    must be same length as options
     max_options: number of options to show at once
     max_selection: maximum index for selections
     slice_head: starting point for slicing the list of options
@@ -214,10 +216,11 @@ class SelectMenu(Overlay):
     pad: minimum amount of space on all sides between text and border
     """
     def __init__(self, header, width, height, options, empty_options,
-                 max_options, pad=1):
+                 column2, max_options, pad=1):
         Overlay.__init__(self, header, width, height)
         self.options = options
         self.empty_options = empty_options
+        self.column2 = column2
         self.max_options = max_options
         self.max_selection = len(self.options) - 1
         self.slice_head = 0
@@ -230,11 +233,11 @@ class SelectMenu(Overlay):
         Prints all the given options up to the specified max_options,
         then draws the background and header.
         """
-        if self.options:
-            y = self.header_height + self.header_pad
-            for option in self.options[self.slice_head:self.slice_tail]:
-                text = "%s" % (option)
+        libt.console_clear(self.overlay)
 
+        if self.options:
+            def print_options():
+                """Prints each option out in a column."""
                 if y - self.header_height - self.header_pad == self.selection_index - self.slice_head:
                     libt.console_set_default_foreground(self.overlay, 
                                                         data.COLOURS['selection_text'])
@@ -246,7 +249,20 @@ class SelectMenu(Overlay):
                     libt.console_print_ex(self.overlay, self.pad, y + self.pad, 
                                           libt.BKGND_NONE, libt.LEFT, text)
 
-                y += 1
+            y = self.header_height + self.header_pad
+
+            if self.column2:
+                for option, col2 in zip(self.options[self.slice_head:self.slice_tail], 
+                                        self.column2[self.slice_head:self.slice_tail]):
+                    padding = " " * (self.width - len(option) - len(col2) - 2*self.pad)
+                    text = option + padding + col2
+                    print_options()
+                    y += 1
+            else:
+                for option in self.options[self.slice_head:self.slice_tail]:
+                    text = option
+                    print_options()
+                    y += 1
         else:
             libt.console_set_default_foreground(self.overlay, data.COLOURS['text'])
             libt.console_print_ex(self.overlay, self.pad, self.header_height + self.header_pad + self.pad, 
@@ -254,6 +270,26 @@ class SelectMenu(Overlay):
 
         Overlay.draw(self)
         libt.console_flush()
+
+
+class InventoryMenu(SelectMenu):
+    """Popup that appears when entering inventory view."""
+    def __init__(self):
+        self.header_height = 1
+        self.header_pad = 1
+        self.pad = 1
+        self.width = 40
+        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
+
+        self.item_names = []
+        self.item_qty = []
+        for item in self.handler.player.inv:
+            self.item_names.append(item.name)
+            self.item_qty.append(str(self.handler.player.inv[item]))
+
+        SelectMenu.__init__(self, "Inventory", self.width, self.height, 
+                            self.item_names, "Your inventory is empty.", 
+                            self.item_qty, config.ITEMS_PER_PAGE)
 
     def select(self):
         """Handles selection of options in the menu."""
@@ -277,28 +313,23 @@ class SelectMenu(Overlay):
                     self.selection_index += 1
                     self.slice_head += 1
                     self.slice_tail += 1
+            elif chr(choice.c) == "d" and self.options:
+                for item in self.handler.player.inv:
+                    if item.name == self.options[self.selection_index]:
+                        if self.handler.player.inv[item] == 1:
+                            if self.slice_head > 0:
+                                self.slice_head -= 1
+                            
+                            self.slice_tail -= 1
+                            del self.options[self.selection_index]
+                            del self.column2[self.selection_index]
+                        else:
+                            new_count = int(self.column2[self.selection_index])
+                            new_count -= 1
+                            self.column2[self.selection_index] = str(new_count)
+
+                        self.handler.player.player_drop(item)
+                        break
 
             self.handler.render_all()
             self.draw()
-
-
-class InventoryMenu(SelectMenu):
-    """Popup that appears when entering inventory view."""
-    def __init__(self):
-        self.header_height = 1
-        self.header_pad = 1
-        self.pad = 1
-        self.width = 40
-        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
-
-        self.item_names = []
-        for item in self.handler.player.inv:
-            text = item.name
-            qty = "Qty: %d" % self.handler.player.inv[item]
-            padding = " " * (self.width - len(text) - len(qty) - 2*self.pad)
-            text += padding + qty
-            self.item_names.append(text)
-
-        SelectMenu.__init__(self, "Inventory", self.width, self.height, 
-                            self.item_names, "Your inventory is empty.",
-                            config.ITEMS_PER_PAGE)

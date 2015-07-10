@@ -52,12 +52,12 @@ class StateHandler(object):
         
         self.world.make_map()
 
-        # DEBUG for inventory
-        # for i in range(20):
-        #     if random.randrange(2):
-        #         self.player.inv.append(entities.WoodenSword(self.player.x, self.player.y))
-        #     else:
-        #         self.player.inv.append(entities.StoneSword(self.player.x, self.player.y))
+        # # DEBUG for inventory
+        for i in range(20):
+            if random.randrange(2):
+                self.player.add_to_inv(entities.WoodenSword(self.player.x, self.player.y))
+            else:
+                self.player.add_to_inv(entities.StoneSword(self.player.x, self.player.y))
 
         # Keep track of game state and player action
         self.game_state = data.PLAY

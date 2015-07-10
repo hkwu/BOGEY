@@ -131,10 +131,16 @@ class Map(object):
         Requires that the tile is passable and that the item is 
         an instance of an entity.
         """
-        if not self.is_solid(x, y):
-            item.x = x
-            item.y = y
-            self.handler.map_objects['items'].append(item)
+        for entity in self.handler.map_objects['mobs'] + self.handler.map_objects['characters']:
+            if entity.x == x and entity.y == y:
+                break
+        else:
+            if self.is_solid(x, y):
+                return
+
+        item.x = x
+        item.y = y
+        self.handler.map_objects['items'].append(item)
 
     def make_map(self):
         """Initializes the game world."""
