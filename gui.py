@@ -213,10 +213,12 @@ class SelectMenu(Overlay):
     slice_head: starting point for slicing the list of options
     slice_tail: end point for slicing the list of options
     selection_index: index for player's current selection
+    bindings: additional keys that enable additional interactivity
+    within the menu
     pad: minimum amount of space on all sides between text and border
     """
     def __init__(self, header, width, height, options, empty_options,
-                 column2, max_options, pad=1):
+                 column2, max_options, bindings, pad=1):
         Overlay.__init__(self, header, width, height)
         self.options = options
         self.empty_options = empty_options
@@ -226,6 +228,7 @@ class SelectMenu(Overlay):
         self.slice_head = 0
         self.slice_tail = min(self.max_options, self.max_selection + 1)
         self.selection_index = 0
+        self.bindings = bindings
         self.pad = pad
 
     def draw(self):
@@ -271,26 +274,6 @@ class SelectMenu(Overlay):
         Overlay.draw(self)
         libt.console_flush()
 
-
-class InventoryMenu(SelectMenu):
-    """Popup that appears when entering inventory view."""
-    def __init__(self):
-        self.header_height = 1
-        self.header_pad = 1
-        self.pad = 1
-        self.width = 40
-        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
-
-        self.item_names = []
-        self.item_qty = []
-        for item in self.handler.player.inv:
-            self.item_names.append(item.name)
-            self.item_qty.append(str(self.handler.player.inv[item]))
-
-        SelectMenu.__init__(self, "Inventory", self.width, self.height, 
-                            self.item_names, "Your inventory is empty.", 
-                            self.item_qty, config.ITEMS_PER_PAGE)
-
     def select(self):
         """Handles selection of options in the menu."""
         choice = libt.console_check_for_keypress(True)
@@ -313,29 +296,61 @@ class InventoryMenu(SelectMenu):
                     self.selection_index += 1
                     self.slice_head += 1
                     self.slice_tail += 1
-            elif chr(choice.c) == "d" and self.options:
-                for item in self.handler.player.inv:
-                    if item.name == self.options[self.selection_index]:
-                        if self.handler.player.inv[item] == 1:
-                            del self.options[self.selection_index]
-                            del self.column2[self.selection_index]
-                            
-                            if self.selection_index == self.max_selection and self.slice_head > 0:
-                                self.slice_head -= 1
-                                self.slice_tail -= 1
-                                self.selection_index -= 1
-                            elif self.selection_index == self.max_selection:
-                                self.slice_tail -= 1
-                                self.selection_index -= 1
 
-                            self.max_selection -= 1
-                        else:
-                            new_count = int(self.column2[self.selection_index])
-                            new_count -= 1
-                            self.column2[self.selection_index] = str(new_count)
-
-                        self.handler.player.player_drop(item)
-                        break
+            for key in self.bindings:
+                if chr(choice.c) == key:
+                    self.bindings[key]()
+                    break
 
             self.handler.render_all()
             self.draw()
+
+
+class InventoryMenu(SelectMenu):
+    """Popup that appears when entering inventory view."""
+    def __init__(self):
+        self.header_height = 1
+        self.header_pad = 1
+        self.pad = 1
+        self.width = 40
+        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
+
+        self.item_names = []
+        self.item_qty = []
+        for item in self.handler.player.inv:
+            self.item_names.append(item.name)
+            self.item_qty.append(str(self.handler.player.inv[item]))
+
+        self.bindings = {
+            'd': self.bind_drop
+        }
+
+        SelectMenu.__init__(self, "Inventory", self.width, self.height, 
+                            self.item_names, "Your inventory is empty.", 
+                            self.item_qty, config.ITEMS_PER_PAGE,
+                            self.bindings)
+
+    def bind_drop(self):
+        if self.options:
+            for item in self.handler.player.inv:
+                if item.name == self.options[self.selection_index]:
+                    if self.handler.player.inv[item] == 1:
+                        del self.options[self.selection_index]
+                        del self.column2[self.selection_index]
+
+                        if self.selection_index == self.max_selection and self.slice_head > 0:
+                            self.slice_head -= 1
+                            self.slice_tail -= 1
+                            self.selection_index -= 1
+                        elif self.selection_index == self.max_selection:
+                            self.slice_tail -= 1
+                            self.selection_index -= 1
+
+                        self.max_selection -= 1
+                    else:
+                        new_count = int(self.column2[self.selection_index])
+                        new_count -= 1
+                        self.column2[self.selection_index] = str(new_count)
+
+                    self.handler.player.player_drop(item)
+                    break

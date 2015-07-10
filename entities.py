@@ -3,6 +3,7 @@
 # Classes for entities such as mobs and items
 #
 
+import copy
 import math
 import random
 import libtcodpy as libt
@@ -77,14 +78,10 @@ class LivingEntity(Entity):
         Removes instance of item from inventory.
         Requires that the item exists in entity's inventory.
         """
-        for obj in self.inv:
-            if obj.name == item.name:
-                if self.inv[obj] > 1:
-                    self.inv[obj] -= 1
-                    break
-                else:
-                    self.inv.pop(obj)
-                    break
+        if self.inv[item] > 1:
+            self.inv[item] -= 1
+        else:
+            return self.inv.pop(item)
 
     def take(self):
         """
@@ -106,8 +103,16 @@ class LivingEntity(Entity):
         """
         for obj in self.handler.player.inv:
             if obj.name == item.name:
-                self.remove_from_inv(obj)
-                self.handler.world.add_item_tile(self.x, self.y, obj)
+                dropped = self.remove_from_inv(obj)
+
+                # If we popped the item from player's inventory, we 
+                # can drop it directly. Else we need to copy it and
+                # drop it
+                if dropped:
+                    self.handler.world.add_item_tile(self.x, self.y, obj)
+                else:
+                    self.handler.world.add_item_tile(self.x, self.y, copy.copy(obj))
+                
                 return obj.name
 
         return False
