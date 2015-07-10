@@ -317,10 +317,15 @@ class InventoryMenu(SelectMenu):
                 for item in self.handler.player.inv:
                     if item.name == self.options[self.selection_index]:
                         if self.handler.player.inv[item] == 1:
-                            if self.slice_head > 0:
+                            if self.selection_index == self.max_selection and self.slice_head > 0:
                                 self.slice_head -= 1
-                            
-                            self.slice_tail -= 1
+                                self.slice_tail -= 1
+                                self.selection_index -= 1
+                            elif self.selection_index == self.max_selection:
+                                self.slice_tail -= 1
+                                self.selection_index -= 1
+
+                            self.max_selection -= 1
                             del self.options[self.selection_index]
                             del self.column2[self.selection_index]
                         else:
