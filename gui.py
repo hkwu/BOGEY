@@ -318,8 +318,13 @@ class InventoryMenu(SelectMenu):
         self.item_names = []
         self.item_qty = []
         for item in self.handler.player.inv:
-            self.item_names.append(item.name)
-            self.item_qty.append(str(self.handler.player.inv[item]))
+            if not item.stackable:
+                for i in range(self.handler.player.inv[item]):
+                    self.item_names.append(item.name)
+                    self.item_qty.append("")
+            else:
+                self.item_names.append(item.name)
+                self.item_qty.append("Qty: %d" % self.handler.player.inv[item])
 
         self.bindings = {
             'd': self.bind_drop
@@ -334,7 +339,7 @@ class InventoryMenu(SelectMenu):
         if self.options:
             for item in self.handler.player.inv:
                 if item.name == self.options[self.selection_index]:
-                    if self.handler.player.inv[item] == 1:
+                    if self.handler.player.inv[item] == 1 or not item.stackable:
                         del self.options[self.selection_index]
                         del self.column2[self.selection_index]
 
