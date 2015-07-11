@@ -34,15 +34,15 @@ class Border(GUIElement):
             if (entity.x == x and entity.y == y and 
                 libt.map_is_in_fov(self.handler.fov_map, entity.x, entity.y)):
                 if entity.state == data.DEAD:
-                    names.append("%s" % entity.name)
+                    names.append(entity.name)
                 else:
-                    names.append("%s [%d/%d]" % (entity.name, entity.hp, entity.max_hp))
+                    names.append("{} [{}/{}]".format(entity.name, entity.hp, entity.max_hp))
 
         # Names of items
         for item in self.handler.map_objects['items']:
             if (item.x == x and item.y == y and
                 libt.map_is_in_fov(self.handler.fov_map, item.x, item.y)):
-                names.append("%s" % item.name)
+                names.append(item.name)
 
         names = ", ".join(names)
         return names
@@ -121,7 +121,7 @@ class StatusBar(GUIElement):
         libt.console_set_default_foreground(self.handler.gui, data.COLOURS['text'])
         libt.console_print_ex(self.handler.gui, bar_midpoint[0], bar_midpoint[1], 
                               libt.BKGND_NONE, libt.CENTER,
-                              "%s: %d/%d" % (self.name, self.val, self.max_val))
+                              "{}: {}/{}".format(self.name, self.val, self.max_val))
 
         libt.console_set_default_foreground(self.handler.gui, data.COLOURS['text'])
 
@@ -324,7 +324,7 @@ class InventoryMenu(SelectMenu):
                     self.item_qty.append("")
             else:
                 self.item_names.append(item.name)
-                self.item_qty.append("Qty: %d" % self.handler.player.inv[item])
+                self.item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
         self.bindings = {
             'd': self.bind_drop

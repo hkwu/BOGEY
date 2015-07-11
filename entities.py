@@ -166,13 +166,13 @@ class Player(CombatEntity):
                 dmg = self.deal_damage(mob)
 
                 if dmg:
-                    self.handler.message_box.add_msg("You attack %s for %d damage!" % (mob.name, dmg), 
+                    self.handler.message_box.add_msg("You attack {} for {} damage!".format(mob.name, dmg), 
                                                      data.COLOURS['player_atk_text'])
                 else:
                     self.handler.message_box.add_msg("You missed!", data.COLOURS['player_atk_text'])
 
                 if mob.state == data.DEAD:
-                    self.handler.message_box.add_msg("You killed %s!" % mob.name, 
+                    self.handler.message_box.add_msg("You killed {}!".format(mob.name), 
                                                      data.COLOURS['player_kill_text'])
                     mob.name += "'s remains"
         else:
@@ -191,7 +191,7 @@ class Player(CombatEntity):
         """
         taken = self.take()
         if taken:
-            self.handler.message_box.add_msg("You take the %s!" % taken,
+            self.handler.message_box.add_msg("You take the {}!".format(taken),
                                              data.COLOURS['player_item_text'])
 
     def player_drop(self, item):
@@ -201,7 +201,7 @@ class Player(CombatEntity):
         """
         dropped = self.drop(item)
         if dropped:
-            self.handler.message_box.add_msg("You drop the %s!" % dropped,
+            self.handler.message_box.add_msg("You drop the {}!".format(dropped),
                                              data.COLOURS['player_item_text'])
 
 
@@ -263,14 +263,14 @@ class Mob(CombatEntity):
                 dmg = self.deal_damage(self.handler.player)
 
                 if dmg:
-                    self.handler.message_box.add_msg("%s attacks you for %d damage!" % (self.name, dmg), 
+                    self.handler.message_box.add_msg("{} attacks you for {} damage!".format(self.name, dmg), 
                                                      data.COLOURS['mob_atk_text'])
                 else:
-                    self.handler.message_box.add_msg("%s missed!" % self.name, 
+                    self.handler.message_box.add_msg("{} missed!".format(self.name), 
                                                      data.COLOURS['mob_atk_text'])
 
                 if self.handler.game_state == data.DEAD:
-                    self.handler.message_box.add_msg("%s killed you!" % self.name,
+                    self.handler.message_box.add_msg("{} killed you!".format(self.name),
                                                      data.COLOURS['player_die_text'])
             elif not self.handler.world.is_solid(self.x + posn[0], self.y + posn[1]):
                 new_dist = linear_dist(self.x + posn[0], target.x,
@@ -320,10 +320,10 @@ class Mob(CombatEntity):
 
                 # Some messages when state changes
                 if self.state == data.CHASE:
-                    self.handler.message_box.add_msg("%s sees you!" % self.name, 
+                    self.handler.message_box.add_msg("{} sees you!".format(self.name), 
                                                      data.COLOURS['mob_behaviour_text'])
                 elif self.state == data.RUN:
-                    self.handler.message_box.add_msg("%s runs away!" % self.name, 
+                    self.handler.message_box.add_msg("{} runs away!".format(self.name), 
                                                      data.COLOURS['mob_behaviour_text'])
 
             x += 1
