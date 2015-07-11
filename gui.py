@@ -336,6 +336,7 @@ class InventoryMenu(SelectMenu):
                             self.bindings)
 
     def bind_drop(self):
+        """Binding for dropping an item."""
         if self.options:
             for item in self.handler.player.inv:
                 if item.name == self.options[self.selection_index]:
