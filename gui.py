@@ -198,7 +198,7 @@ class Overlay(GUIElement):
             self.header_x = (self.width - 1)/2
             self.libt_align = libt.CENTER
         else:
-            self.header_x = self.width - self.pad
+            self.header_x = self.width - 1 - self.pad
             self.libt_align = libt.RIGHT
 
         libt.console_set_default_foreground(self.overlay, data.COLOURS['text'])
