@@ -33,6 +33,7 @@ class StateHandler(object):
         world.Map.handler = self
         gui.GUIElement.handler = self
 
+        self.init_program()
         self.new_game()
         
     def keybinds(self):
@@ -62,6 +63,17 @@ class StateHandler(object):
                     menu.select()
 
                 return data.NO_MOVE
+
+    def init_program(self):
+        """Setup method that is run when program starts."""
+        libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
+                                     libt.FONT_TYPE_GREYSCALE 
+                                     | libt.FONT_LAYOUT_TCOD)
+        libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
+                               "BOGEY", False)
+        libt.console_credits()
+        libt.console_set_keyboard_repeat(50, 100)
+        libt.sys_set_fps(60)
 
     def new_game(self):
         """Generates a new game."""
@@ -98,6 +110,24 @@ class StateHandler(object):
         self.border = gui.Border()
         self.health_bar = gui.HealthBar()
         self.message_box = gui.MessageBox()
+
+    def play(self):
+        """Runs the game loop after game data has been set."""
+        while not libt.console_is_window_closed():
+            libt.sys_check_for_event(libt.EVENT_KEY_PRESS | libt.EVENT_MOUSE, 
+                                     self.key, self.mouse)
+            self.render_all()
+            libt.console_flush()
+
+            for lst in self.map_objects:
+                self.clear_obj(self.map_objects[lst])
+
+            player_action = self.keybinds()
+            if player_action == data.EXIT:
+                break
+            elif self.game_state == data.PLAY and player_action != data.NO_MOVE:
+                for mob in self.map_objects['mobs']:
+                    mob.action_handler()
 
     def draw_obj(self, lst):
         """Takes a list of objects and draws them on the map."""
