@@ -116,12 +116,13 @@ class Map(object):
         while count > 0:
             item_x = random.randrange(room.x1 + 1, room.x2)
             item_y = random.randrange(room.y1 + 1, room.y2)
-            item = random.randrange(3)
+            item = random.randrange(5)
 
             if not self.is_solid(item_x, item_y):
                 if item == 0:
-                    new = entities.WoodenSword(item_x, item_y)
-                    self.handler.map_objects['items'].append(new)
+                    self.handler.map_objects['items'].append(entities.WoodenSword(item_x, item_y))
+                elif item == 1:
+                    self.handler.map_objects['items'].append(entities.StoneSword(item_x, item_y))
 
             count -= 1
 

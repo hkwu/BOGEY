@@ -28,48 +28,13 @@ class StateHandler(object):
         self.key = libt.Key()
         self.mouse = libt.Mouse()
 
-        # FOV
-        self.fov_refresh = True
-        self.fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
-
         # Set this class as owner for Entity, Map and GUIElement classes
         entities.Entity.handler = self
         world.Map.handler = self
         gui.GUIElement.handler = self
 
-        # Instantiate
-        self.player = entities.Player(0, 0, "Player")
-        self.world = world.Map()
-
-        self.border = gui.Border()
-        self.health_bar = gui.HealthBar()
-        self.message_box = gui.MessageBox()
-
-        # Map objects, OrderedDict ensures proper draw order
-        self.map_objects = collections.OrderedDict([('items', []), 
-                                                    ('mobs', []), 
-                                                    ('characters', [self.player])])
+        self.new_game()
         
-        self.world.make_map()
-
-        # # DEBUG for inventory
-        for i in range(20):
-            if random.randrange(2):
-                self.player.add_to_inv(entities.WoodenSword(self.player.x, self.player.y))
-            else:
-                self.player.add_to_inv(entities.StoneSword(self.player.x, self.player.y))
-
-        # Keep track of game state and player action
-        self.game_state = data.PLAY
-        self.player_action = None
-
-        # Set FOV properties for all tiles
-        for i in range(config.MAP_WIDTH):
-            for j in range(config.MAP_HEIGHT):
-                libt.map_set_properties(self.fov_map, i, j, 
-                                        not self.world.map[i][j].fog, 
-                                        self.world.map[i][j].passable)
-
     def keybinds(self):
         """Handles keyboard input from the user."""
         if self.key.vk == libt.KEY_ENTER and self.key.lalt:
@@ -97,6 +62,42 @@ class StateHandler(object):
                     menu.select()
 
                 return data.NO_MOVE
+
+    def new_game(self):
+        """Generates a new game."""
+        self.game_state = data.PLAY
+        self.player_action = None
+        self.init_game_objects()
+        self.world.make_map()
+        self.init_fov()
+        self.init_gui()
+
+    def init_game_objects(self):
+        """Creates the object instances."""
+        self.player = entities.Player(0, 0, "Player")
+        self.world = world.Map()
+
+        # Map objects, OrderedDict ensures proper draw order
+        self.map_objects = collections.OrderedDict([('items', []), 
+                                                    ('mobs', []), 
+                                                    ('characters', [self.player])])
+
+    def init_fov(self):
+        """Initializes the FOV map."""
+        self.fov_refresh = True
+        self.fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+
+        for i in range(config.MAP_WIDTH):
+            for j in range(config.MAP_HEIGHT):
+                libt.map_set_properties(self.fov_map, i, j, 
+                                        not self.world.map[i][j].fog, 
+                                        self.world.map[i][j].passable)
+
+    def init_gui(self):
+        """Instantiates the GUI elements."""
+        self.border = gui.Border()
+        self.health_bar = gui.HealthBar()
+        self.message_box = gui.MessageBox()
 
     def draw_obj(self, lst):
         """Takes a list of objects and draws them on the map."""
