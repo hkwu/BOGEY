@@ -4,14 +4,13 @@
 #
 
 import collections
+import random
 import libtcodpy as libt
 import config
 import data
 import entities
 import gui
 import world
-
-import random
 
 class StateHandler(object):
     """
@@ -20,14 +19,6 @@ class StateHandler(object):
     about the state of the game.
     """
     def __init__(self):
-        # Screen consoles
-        self.game_map = libt.console_new(config.MAP_WIDTH, config.MAP_HEIGHT)
-        self.gui = libt.console_new(config.GUI_WIDTH, config.GUI_HEIGHT)
-
-        # Set up input
-        self.key = libt.Key()
-        self.mouse = libt.Mouse()
-
         # Set this class as owner for Entity, Map and GUIElement classes
         entities.Entity.handler = self
         world.Map.handler = self
@@ -74,6 +65,14 @@ class StateHandler(object):
         libt.console_credits()
         libt.console_set_keyboard_repeat(50, 100)
         libt.sys_set_fps(60)
+        
+        # Screen consoles
+        self.game_map = libt.console_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+        self.gui = libt.console_new(config.GUI_WIDTH, config.GUI_HEIGHT)
+        
+        # Set up input
+        self.key = libt.Key()
+        self.mouse = libt.Mouse()
 
     def new_game(self):
         """Generates a new game."""
