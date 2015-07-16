@@ -39,3 +39,8 @@ HOLD = 0
 CHASE = 1
 RUN = 2
 DEAD = "dead"
+
+# Header alignment for overlays
+LEFT = "left"
+CENTER = "center"
+RIGHT = "right"

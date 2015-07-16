@@ -166,22 +166,20 @@ class Overlay(GUIElement):
     Requires that the given header is exactly one line high.
 
     header: title of the overlay
+    header_align: alignment of the header; left, centre or right
     width: width of the overlay
     height: height of the overlay
-    overlay: off-screen console for overlay
-    x: x-coordinate of top-left corner where overlay will be blitted 
-    onto root console
-    y: y-coordinate of top-left corner where overlay will be blitted
-    onto root console
-    header_height: number of vertical lines the wrapped title of the
-    overlay will occupy
-    header_pad: amount of space above header
+    pad: minimum amount of space on all sides between text and border
     """
-    def __init__(self, header, width, height):
+    def __init__(self, header, header_align, width, height, pad=1):
         GUIElement.__init__(self)
         self.header = header
+        self.header_align = header_align
         self.width = width
         self.height = height
+        self.pad = pad
+
+        # Initialize overlay and define some parameters
         self.overlay = libt.console_new(self.width, self.height)
         self.x = config.SCREEN_WIDTH/2 - self.width/2
         self.y = config.SCREEN_HEIGHT/2 - self.height/2
@@ -193,9 +191,19 @@ class Overlay(GUIElement):
         Adds the header to the overlay and blits its contents
         to the root console.
         """
+        if self.header_align == data.LEFT:
+            self.header_x = self.pad
+            self.libt_align = libt.CENTER
+        elif self.header_align == data.CENTER:
+            self.header_x = (self.width - 1)/2
+            self.libt_align = libt.LEFT
+        else:
+            self.header_x = self.width - self.pad
+            self.libt_align = libt.RIGHT
+
         libt.console_set_default_foreground(self.overlay, data.COLOURS['text'])
-        libt.console_print_ex(self.overlay, (self.width - 1)/2, self.header_pad, 
-                              libt.BKGND_NONE, libt.CENTER, self.header)
+        libt.console_print_ex(self.overlay, self.header_x, self.header_pad, 
+                              libt.BKGND_NONE, self.libt_align, self.header)
         libt.console_blit(self.overlay, 0, 0, self.width, self.height, 
                           0, self.x, self.y, 1.0, 0.7)
 
@@ -210,16 +218,13 @@ class SelectMenu(Overlay):
     must be same length as options
     max_options: number of options to show at once
     max_selection: maximum index for selections
-    slice_head: starting point for slicing the list of options
-    slice_tail: end point for slicing the list of options
     selection_index: index for player's current selection
     bindings: additional keys that enable additional interactivity
     within the menu
-    pad: minimum amount of space on all sides between text and border
     """
-    def __init__(self, header, width, height, options, empty_options,
-                 column2, max_options, bindings, pad=1):
-        Overlay.__init__(self, header, width, height)
+    def __init__(self, header, header_align, width, height, options, 
+                 empty_options, column2, max_options, bindings):
+        Overlay.__init__(self, header, header_align, width, height)
         self.options = options
         self.empty_options = empty_options
         self.column2 = column2
@@ -229,7 +234,6 @@ class SelectMenu(Overlay):
         self.slice_tail = min(self.max_options, self.max_selection + 1)
         self.selection_index = 0
         self.bindings = bindings
-        self.pad = pad
 
     def draw(self):
         """
@@ -306,17 +310,24 @@ class SelectMenu(Overlay):
             self.draw()
 
 
-class InventoryMenu(SelectMenu):
+class StandardMenu(SelectMenu):
+    """
+    Menu with one pixel border around the edges 
+    and one pixel space between the header and body.
+    """
+    def __init__(self, header, header_align, width, options, empty_options, 
+                 column2, max_options, bindings):
+        SelectMenu.__init__(self, header, header_align, width, max_options + 4, 
+                            options, empty_options, column2, max_options, 
+                            bindings)
+
+
+class InventoryMenu(StandardMenu):
     """Popup that appears when entering inventory view."""
     def __init__(self):
-        self.header_height = 1
-        self.header_pad = 1
-        self.pad = 1
-        self.width = 40
-        self.height = config.ITEMS_PER_PAGE + 2*self.pad + self.header_height + self.header_pad
-
         self.item_names = []
         self.item_qty = []
+
         for item in self.handler.player.inv:
             if not item.stackable:
                 for i in range(self.handler.player.inv[item]):
@@ -330,10 +341,9 @@ class InventoryMenu(SelectMenu):
             'd': self.bind_drop
         }
 
-        SelectMenu.__init__(self, "Inventory", self.width, self.height, 
-                            self.item_names, "Your inventory is empty.", 
-                            self.item_qty, config.ITEMS_PER_PAGE,
-                            self.bindings)
+        StandardMenu.__init__(self, "Inventory", data.CENTER, 40, self.item_names, 
+                              "Your inventory is empty.", self.item_qty, 
+                              config.ITEMS_PER_PAGE, self.bindings)
 
     def bind_drop(self):
         """Binding for dropping an item."""
@@ -360,3 +370,10 @@ class InventoryMenu(SelectMenu):
 
                     self.handler.player.player_drop(item)
                     break
+
+
+class MainMenu(SelectMenu):
+    """The main menu."""
+    def __init__(self):
+        backdrop = libt.image_load("title.png")
+        libt.image_blit_2x(backdrop, 0, 0, 0)

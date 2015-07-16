@@ -14,7 +14,7 @@ import world
 
 class StateHandler(object):
     """
-    Class that takes care of interactions between entity, 
+    Class that takes care of interactions between entities, 
     gui and world modules. It also stores important data
     about the state of the game.
     """
@@ -65,11 +65,11 @@ class StateHandler(object):
         libt.console_credits()
         libt.console_set_keyboard_repeat(50, 100)
         libt.sys_set_fps(60)
-        
+
         # Screen consoles
         self.game_map = libt.console_new(config.MAP_WIDTH, config.MAP_HEIGHT)
         self.gui = libt.console_new(config.GUI_WIDTH, config.GUI_HEIGHT)
-        
+
         # Set up input
         self.key = libt.Key()
         self.mouse = libt.Mouse()

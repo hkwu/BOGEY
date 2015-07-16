@@ -57,8 +57,6 @@ class Entity(object):
 class LivingEntity(Entity):
     """
     Class for entities that are alive.
-
-    inv: inventory of the entity
     """
     def __init__(self, x, y, name, char, colour):
         Entity.__init__(self, x, y, name, char, colour, True)
