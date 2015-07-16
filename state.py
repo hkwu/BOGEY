@@ -25,16 +25,14 @@ class StateHandler(object):
         gui.GUIElement.handler = self
 
         self.init_program()
-        self.new_game()
-        
+
     def keybinds(self):
         """Handles keyboard input from the user."""
         if self.key.vk == libt.KEY_ENTER and self.key.lalt:
             libt.console_set_fullscreen(not libt.console_is_fullscreen())
         elif self.key.vk == libt.KEY_ESCAPE:
             return data.EXIT
-
-        if self.game_state == data.PLAY:
+        elif self.game_state == data.PLAY:
             if self.key.vk == libt.KEY_UP:
                 self.player.move_or_attack(0, -1)
             elif self.key.vk == libt.KEY_DOWN:
@@ -74,6 +72,11 @@ class StateHandler(object):
         self.key = libt.Key()
         self.mouse = libt.Mouse()
 
+        # Create main menu
+        self.main_menu = gui.MainMenu()
+        self.main_menu.draw()
+        self.main_menu.select(False)
+
     def new_game(self):
         """Generates a new game."""
         self.game_state = data.PLAY
@@ -97,6 +100,7 @@ class StateHandler(object):
         """Initializes the FOV map."""
         self.fov_refresh = True
         self.fov_map = libt.map_new(config.MAP_WIDTH, config.MAP_HEIGHT)
+        libt.console_clear(self.game_map)
 
         for i in range(config.MAP_WIDTH):
             for j in range(config.MAP_HEIGHT):

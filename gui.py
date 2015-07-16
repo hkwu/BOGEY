@@ -193,10 +193,10 @@ class Overlay(GUIElement):
         """
         if self.header_align == data.LEFT:
             self.header_x = self.pad
-            self.libt_align = libt.CENTER
+            self.libt_align = libt.LEFT
         elif self.header_align == data.CENTER:
             self.header_x = (self.width - 1)/2
-            self.libt_align = libt.LEFT
+            self.libt_align = libt.CENTER
         else:
             self.header_x = self.width - self.pad
             self.libt_align = libt.RIGHT
@@ -278,7 +278,7 @@ class SelectMenu(Overlay):
         Overlay.draw(self)
         libt.console_flush()
 
-    def select(self):
+    def select(self, game_render=True):
         """Handles selection of options in the menu."""
         choice = libt.console_check_for_keypress(True)
 
@@ -300,13 +300,17 @@ class SelectMenu(Overlay):
                     self.selection_index += 1
                     self.slice_head += 1
                     self.slice_tail += 1
+            elif choice.vk == libt.KEY_ENTER:
+                self.bindings[self.selection_index]()
 
             for key in self.bindings:
                 if chr(choice.c) == key:
                     self.bindings[key]()
                     break
 
-            self.handler.render_all()
+            if game_render:
+                self.handler.render_all()
+
             self.draw()
 
 
@@ -372,8 +376,28 @@ class InventoryMenu(StandardMenu):
                     break
 
 
-class MainMenu(SelectMenu):
+class MainMenu(StandardMenu):
     """The main menu."""
     def __init__(self):
+        self.options = ["New Game", "Quit"]
+        self.bindings = {
+            0: self.bind_new_game,
+            1: self.bind_quit
+        }
+
+        StandardMenu.__init__(self, "BOGEY", data.CENTER, 15, self.options,
+                              "", [], 3, self.bindings) 
+
+    def draw(self):
         backdrop = libt.image_load("title.png")
         libt.image_blit_2x(backdrop, 0, 0, 0)
+        StandardMenu.draw(self)
+
+    def bind_new_game(self):
+        """Starts a new game."""
+        self.handler.new_game()
+        self.handler.play()
+
+    def bind_quit(self):
+        """Exits program."""
+        raise SystemExit
