@@ -9,4 +9,4 @@ import state
 
 if __name__ == "__main__":
     game = state.StateHandler()
-    game.play()
+    game.init_program()

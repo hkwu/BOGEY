@@ -225,7 +225,7 @@ class SelectMenu(Overlay):
     """
     def __init__(self, header, header_align, width, height, options, 
                  empty_options, column2, max_options, bindings,
-                escape):
+                 escape):
         Overlay.__init__(self, header, header_align, width, height)
         self.options = options
         self.empty_options = empty_options
@@ -237,6 +237,8 @@ class SelectMenu(Overlay):
         self.selection_index = 0
         self.bindings = bindings
         self.escape = escape
+        self.active = True
+        self.status = None
 
     def draw(self):
         """
@@ -285,16 +287,14 @@ class SelectMenu(Overlay):
         """Handles selection of options in the menu."""
         choice = libt.console_check_for_keypress(True)
 
-        while True:
+        while self.active:
             if self.escape:
-                dismiss = False
-
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
-                        dismiss = True
+                        self.active = False
                         break
 
-                if dismiss:
+                if not self.active:
                     break
 
             libt.console_wait_for_keypress(True)
@@ -316,16 +316,18 @@ class SelectMenu(Overlay):
                     self.slice_tail += 1
             elif choice.vk == libt.KEY_ENTER and self.options:
                 self.bindings[self.selection_index]()
-
-            for key in self.bindings:
-                if chr(choice.c) == key:
-                    self.bindings[key]()
-                    break
+            else:
+                for key in self.bindings:
+                    if chr(choice.c) == key:
+                        self.bindings[key]()
+                        break
 
             if game_render:
                 self.handler.render_all()
 
             self.draw()
+
+        return self.status
 
 
 class StandardMenu(SelectMenu):
@@ -394,6 +396,28 @@ class InventoryMenu(StandardMenu):
                     break
 
 
+class InGameMenu(StandardMenu):
+    """Options menu when currently within a game."""
+    def __init__(self):
+        self.options = ["Resume", "Main Menu"]
+        self.bindings = {
+            0: self.bind_resume,
+            1: self.bind_main_menu
+        }
+
+        StandardMenu.__init__(self, "Options", data.CENTER, 15, self.options,
+                              "", [], 2, self.bindings, [libt.KEY_ESCAPE])
+
+    def bind_main_menu(self):
+        """Brings up the main menu."""
+        self.active = False
+        self.status = data.EXIT
+
+    def bind_resume(self):
+        """Dismisses menu."""
+        self.active = False
+
+
 class MainMenu(StandardMenu):
     """The main menu."""
     def __init__(self):
@@ -418,4 +442,4 @@ class MainMenu(StandardMenu):
 
     def bind_quit(self):
         """Exits program."""
-        raise SystemExit
+        self.active = False

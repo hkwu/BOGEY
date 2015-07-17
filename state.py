@@ -24,14 +24,19 @@ class StateHandler(object):
         world.Map.handler = self
         gui.GUIElement.handler = self
 
-        self.init_program()
-
     def keybinds(self):
         """Handles keyboard input from the user."""
         if self.key.vk == libt.KEY_ENTER and self.key.lalt:
             libt.console_set_fullscreen(not libt.console_is_fullscreen())
         elif self.key.vk == libt.KEY_ESCAPE:
-            return data.EXIT
+            menu = gui.InGameMenu()
+            menu.draw()
+            status = menu.select()
+
+            if status == data.EXIT:
+                return status
+            else:
+                return data.NO_MOVE
         elif self.game_state == data.PLAY:
             if self.key.vk == libt.KEY_UP:
                 self.player.move_or_attack(0, -1)
