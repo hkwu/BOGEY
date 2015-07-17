@@ -132,6 +132,8 @@ class Map(object):
         Requires that the tile is passable and that the item is 
         an instance of an entity.
         """
+        assert hasattr(item, "name")
+
         for entity in self.handler.map_objects['mobs'] + self.handler.map_objects['characters']:
             if entity.x == x and entity.y == y:
                 break

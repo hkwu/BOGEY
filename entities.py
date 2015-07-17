@@ -74,6 +74,8 @@ class LivingEntity(Entity):
         Removes instance of item from inventory.
         Requires that the item exists in entity's inventory.
         """
+        assert item in self.inv
+
         if self.inv[item] > 1:
             self.inv[item] -= 1
         else:

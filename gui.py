@@ -179,13 +179,19 @@ class Overlay(GUIElement):
         self.height = height
         self.pad = pad
 
+        head_height = libt.console_get_height_rect(self.handler.game_map, 0, 0, 
+                                                   config.SCREEN_WIDTH, 
+                                                   config.SCREEN_HEIGHT, 
+                                                   self.header)
+        assert head_height == 1
+
         # Initialize overlay and define some parameters
         self.overlay = libt.console_new(self.width, self.height)
         self.x = config.SCREEN_WIDTH/2 - self.width/2
         self.y = config.SCREEN_HEIGHT/2 - self.height/2
         self.header_height = 1
         self.header_pad = 1
-
+        
     def draw(self):
         """
         Adds the header to the overlay and blits its contents
