@@ -364,7 +364,8 @@ class Item(Entity):
 
     def use(self):
         """Uses the item."""
-        pass
+        # DEBUG
+        print("You use the {}!".format(self.name))
 
 
 class Weapon(Item):

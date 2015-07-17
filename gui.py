@@ -221,9 +221,12 @@ class SelectMenu(Overlay):
     selection_index: index for player's current selection
     bindings: additional keys that enable additional interactivity
     within the menu
+    call_key: key to bring up the menu
+    escape: key to dismiss the menu in addition to call_key
     """
     def __init__(self, header, header_align, width, height, options, 
-                 empty_options, column2, max_options, bindings):
+                 empty_options, column2, max_options, bindings,
+                 call_key, escape):
         Overlay.__init__(self, header, header_align, width, height)
         self.options = options
         self.empty_options = empty_options
@@ -234,6 +237,8 @@ class SelectMenu(Overlay):
         self.slice_tail = min(self.max_options, self.max_selection + 1)
         self.selection_index = 0
         self.bindings = bindings
+        self.call_key = call_key
+        self.escape = escape
 
     def draw(self):
         """
@@ -282,7 +287,11 @@ class SelectMenu(Overlay):
         """Handles selection of options in the menu."""
         choice = libt.console_check_for_keypress(True)
 
-        while choice.vk != libt.KEY_ESCAPE and chr(choice.c) != "i":
+        while True:
+            if self.escape:
+                if choice.vk == self.escape or chr(choice.c) == self.call_key:
+                    break
+
             libt.console_wait_for_keypress(True)
             choice = libt.console_wait_for_keypress(True)
 
@@ -300,7 +309,7 @@ class SelectMenu(Overlay):
                     self.selection_index += 1
                     self.slice_head += 1
                     self.slice_tail += 1
-            elif choice.vk == libt.KEY_ENTER:
+            elif choice.vk == libt.KEY_ENTER and self.options:
                 self.bindings[self.selection_index]()
 
             for key in self.bindings:
@@ -320,17 +329,22 @@ class StandardMenu(SelectMenu):
     and one pixel space between the header and body.
     """
     def __init__(self, header, header_align, width, options, empty_options, 
-                 column2, max_options, bindings):
+                 column2, max_options, bindings, call_key, escape=libt.KEY_ESCAPE):
         SelectMenu.__init__(self, header, header_align, width, max_options + 4, 
                             options, empty_options, column2, max_options, 
-                            bindings)
+                            bindings, call_key, escape)
 
 
 class InventoryMenu(StandardMenu):
     """Popup that appears when entering inventory view."""
     def __init__(self):
+        self.bindings = {
+            'd': self.bind_drop
+        }
+
         self.item_names = []
         self.item_qty = []
+        index = 0
 
         for item in self.handler.player.inv:
             if not item.stackable:
@@ -341,13 +355,11 @@ class InventoryMenu(StandardMenu):
                 self.item_names.append(item.name)
                 self.item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
-        self.bindings = {
-            'd': self.bind_drop
-        }
+            self.bindings[index] = item.use
 
         StandardMenu.__init__(self, "Inventory", data.CENTER, 40, self.item_names, 
                               "Your inventory is empty.", self.item_qty, 
-                              config.ITEMS_PER_PAGE, self.bindings)
+                              config.ITEMS_PER_PAGE, self.bindings, "i")
 
     def bind_drop(self):
         """Binding for dropping an item."""
@@ -386,7 +398,7 @@ class MainMenu(StandardMenu):
         }
 
         StandardMenu.__init__(self, "BOGEY", data.CENTER, 15, self.options,
-                              "", [], 3, self.bindings) 
+                              "", [], 3, self.bindings, None, None)
 
     def draw(self):
         backdrop = libt.image_load("title.png")
