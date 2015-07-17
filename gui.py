@@ -187,8 +187,8 @@ class Overlay(GUIElement):
 
         # Initialize overlay and define some parameters
         self.overlay = libt.console_new(self.width, self.height)
-        self.x = config.SCREEN_WIDTH/2 - self.width/2
-        self.y = config.SCREEN_HEIGHT/2 - self.height/2
+        self.x = (config.SCREEN_WIDTH - 1)/2 - self.width/2
+        self.y = (config.SCREEN_HEIGHT - 1)/2 - self.height/2
         self.header_height = 1
         self.header_pad = 1
         
@@ -218,21 +218,22 @@ class SelectMenu(Overlay):
     """
     Class for menu that allows selection of options.
 
+    align: alignment of the options; anything other than left align
+    requires that column2 is empty
     options: the selections that can be made in the menu
     empty_options: string that is displayed when no options exist
     column2: additional text that is aligned right of each option,
     must be same length as options
     max_options: number of options to show at once
-    max_selection: maximum index for selections
-    selection_index: index for player's current selection
     bindings: additional keys that enable additional interactivity
     within the menu
     escape: list of keys that dismiss the menu
     """
-    def __init__(self, header, header_align, width, height, options, 
-                 empty_options, column2, max_options, bindings,
+    def __init__(self, align, header, header_align, width, height, 
+                 options, empty_options, column2, max_options, bindings,
                  escape):
         Overlay.__init__(self, header, header_align, width, height)
+        self.align = align
         self.options = options
         self.empty_options = empty_options
         self.column2 = column2
@@ -246,6 +247,9 @@ class SelectMenu(Overlay):
         self.active = True
         self.status = None
 
+        if self.align != data.LEFT:
+            assert not column2
+
     def draw(self):
         """
         Prints all the given options up to the specified max_options,
@@ -256,16 +260,26 @@ class SelectMenu(Overlay):
         if self.options:
             def print_options():
                 """Prints each option out in a column."""
+                if self.header_align == data.LEFT:
+                    self.option_x = self.pad
+                    self.libt_align = libt.LEFT
+                elif self.header_align == data.CENTER:
+                    self.option_x = (self.width - 1)/2
+                    self.libt_align = libt.CENTER
+                else:
+                    self.option_x = self.width - 1 - self.pad
+                    self.libt_align = libt.RIGHT
+
                 if y - self.header_height - self.header_pad == self.selection_index - self.slice_head:
                     libt.console_set_default_foreground(self.overlay, 
                                                         data.COLOURS['selection_text'])
-                    libt.console_print_ex(self.overlay, self.pad, y + self.pad,
-                                          libt.BKGND_NONE, libt.LEFT, text)
+                    libt.console_print_ex(self.overlay, self.option_x, y + self.pad,
+                                          libt.BKGND_NONE, self.libt_align, text)
                 else:
                     libt.console_set_default_foreground(self.overlay, 
                                                         data.COLOURS['text'])
-                    libt.console_print_ex(self.overlay, self.pad, y + self.pad, 
-                                          libt.BKGND_NONE, libt.LEFT, text)
+                    libt.console_print_ex(self.overlay, self.option_x, y + self.pad, 
+                                          libt.BKGND_NONE, self.libt_align, text)
 
             y = self.header_height + self.header_pad
 
@@ -341,11 +355,11 @@ class StandardMenu(SelectMenu):
     Menu with one pixel border around the edges 
     and one pixel space between the header and body.
     """
-    def __init__(self, header, header_align, width, options, empty_options, 
-                 column2, max_options, bindings, escape):
-        SelectMenu.__init__(self, header, header_align, width, max_options + 4, 
-                            options, empty_options, column2, max_options, 
-                            bindings, escape)
+    def __init__(self, align, header, header_align, width, options, 
+                 empty_options, column2, max_options, bindings, escape):
+        SelectMenu.__init__(self, align, header, header_align, width, 
+                            max_options + 4, options, empty_options, 
+                            column2, max_options, bindings, escape)
 
 
 class InventoryMenu(StandardMenu):
@@ -370,10 +384,10 @@ class InventoryMenu(StandardMenu):
 
             self.bindings[index] = item.use
 
-        StandardMenu.__init__(self, "Inventory", data.CENTER, 40, self.item_names, 
-                              "Your inventory is empty.", self.item_qty, 
-                              config.ITEMS_PER_PAGE, self.bindings,
-                              [libt.KEY_ESCAPE, "i"])
+        StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40, 
+                              self.item_names, "Your inventory is empty.", 
+                              self.item_qty, config.ITEMS_PER_PAGE, 
+                              self.bindings, [libt.KEY_ESCAPE, "i"])
 
     def bind_drop(self):
         """Binding for dropping an item."""
@@ -411,8 +425,9 @@ class InGameMenu(StandardMenu):
             1: self.bind_main_menu
         }
 
-        StandardMenu.__init__(self, "Options", data.CENTER, 15, self.options,
-                              "", [], 2, self.bindings, [libt.KEY_ESCAPE])
+        StandardMenu.__init__(self, data.CENTER, "Options", data.CENTER, 15, 
+                              self.options, "", [], 2, self.bindings, 
+                              [libt.KEY_ESCAPE])
 
     def bind_main_menu(self):
         """Brings up the main menu."""
@@ -433,8 +448,8 @@ class MainMenu(StandardMenu):
             1: self.bind_quit
         }
 
-        StandardMenu.__init__(self, "BOGEY", data.CENTER, 15, self.options,
-                              "", [], 3, self.bindings, [])
+        StandardMenu.__init__(self, data.CENTER, "BOGEY", data.CENTER, 15, 
+                              self.options, "", [], 3, self.bindings, [])
 
     def draw(self):
         backdrop = libt.image_load("title.png")
