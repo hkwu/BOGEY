@@ -221,12 +221,11 @@ class SelectMenu(Overlay):
     selection_index: index for player's current selection
     bindings: additional keys that enable additional interactivity
     within the menu
-    call_key: key to bring up the menu
-    escape: key to dismiss the menu in addition to call_key
+    escape: list of keys that dismiss the menu
     """
     def __init__(self, header, header_align, width, height, options, 
                  empty_options, column2, max_options, bindings,
-                 call_key, escape):
+                escape):
         Overlay.__init__(self, header, header_align, width, height)
         self.options = options
         self.empty_options = empty_options
@@ -237,7 +236,6 @@ class SelectMenu(Overlay):
         self.slice_tail = min(self.max_options, self.max_selection + 1)
         self.selection_index = 0
         self.bindings = bindings
-        self.call_key = call_key
         self.escape = escape
 
     def draw(self):
@@ -289,7 +287,14 @@ class SelectMenu(Overlay):
 
         while True:
             if self.escape:
-                if choice.vk == self.escape or chr(choice.c) == self.call_key:
+                dismiss = False
+
+                for key in self.escape:
+                    if choice.vk == key or chr(choice.c) == key:
+                        dismiss = True
+                        break
+
+                if dismiss:
                     break
 
             libt.console_wait_for_keypress(True)
@@ -329,10 +334,10 @@ class StandardMenu(SelectMenu):
     and one pixel space between the header and body.
     """
     def __init__(self, header, header_align, width, options, empty_options, 
-                 column2, max_options, bindings, call_key, escape=libt.KEY_ESCAPE):
+                 column2, max_options, bindings, escape):
         SelectMenu.__init__(self, header, header_align, width, max_options + 4, 
                             options, empty_options, column2, max_options, 
-                            bindings, call_key, escape)
+                            bindings, escape)
 
 
 class InventoryMenu(StandardMenu):
@@ -359,7 +364,8 @@ class InventoryMenu(StandardMenu):
 
         StandardMenu.__init__(self, "Inventory", data.CENTER, 40, self.item_names, 
                               "Your inventory is empty.", self.item_qty, 
-                              config.ITEMS_PER_PAGE, self.bindings, "i")
+                              config.ITEMS_PER_PAGE, self.bindings,
+                              [libt.KEY_ESCAPE, "i"])
 
     def bind_drop(self):
         """Binding for dropping an item."""
@@ -398,7 +404,7 @@ class MainMenu(StandardMenu):
         }
 
         StandardMenu.__init__(self, "BOGEY", data.CENTER, 15, self.options,
-                              "", [], 3, self.bindings, None, None)
+                              "", [], 3, self.bindings, [])
 
     def draw(self):
         backdrop = libt.image_load("title.png")
