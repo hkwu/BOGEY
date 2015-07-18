@@ -4,7 +4,7 @@
 #
 
 # Path for image files
-IMG_PATH = "img\\"
+IMG_PATH = "img/"
 
 # Console dimensions
 SCREEN_WIDTH = 150
