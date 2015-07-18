@@ -12,6 +12,7 @@ import entities
 import gui
 import world
 
+
 class StateHandler(object):
     """
     Class that takes care of interactions between entities, 
@@ -60,7 +61,7 @@ class StateHandler(object):
 
     def init_program(self):
         """Setup method that is run when program starts."""
-        libt.console_set_custom_font("dejavu10x10_gs_tc.png", 
+        libt.console_set_custom_font(config.IMG_PATH + "dejavu10x10_gs_tc.png", 
                                      libt.FONT_TYPE_GREYSCALE 
                                      | libt.FONT_LAYOUT_TCOD)
         libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 

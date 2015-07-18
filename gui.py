@@ -452,7 +452,7 @@ class MainMenu(StandardMenu):
                               self.options, "", [], 3, self.bindings, [])
 
     def draw(self):
-        backdrop = libt.image_load("title.png")
+        backdrop = libt.image_load(config.IMG_PATH + "title.png")
         libt.image_blit_2x(backdrop, 0, 0, 0)
         StandardMenu.draw(self)
 
