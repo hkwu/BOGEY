@@ -237,10 +237,10 @@ class SelectMenu(Overlay):
     Class for menu that allows selection of options.
 
     align: alignment of the options; anything other than left align
-    requires that column2 is empty
+    requires that tail_txt is empty
     options: the selections that can be made in the menu
     empty_options: string that is displayed when no options exist
-    column2: additional text that is aligned right of each option,
+    tail_txt: additional text that is aligned right of each option,
     must be same length as options
     max_options: number of options to show at once
     bindings: additional keys that enable additional interactivity
@@ -248,13 +248,13 @@ class SelectMenu(Overlay):
     escape: list of keys that dismiss the menu
     """
     def __init__(self, align, header, header_align, width, height, ingame,
-                 options, empty_options, column2, max_options, bindings,
+                 options, empty_options, tail_txt, max_options, bindings,
                  escape):
         Overlay.__init__(self, header, header_align, width, height, ingame)
         self.align = align
         self.options = options
         self.empty_options = empty_options
-        self.column2 = column2
+        self.tail_txt = tail_txt
         self.max_options = max_options
         self.max_selection = len(self.options) - 1
         self.slice_head = 0
@@ -266,7 +266,7 @@ class SelectMenu(Overlay):
         self.status = None
 
         if self.align != data.LEFT:
-            assert not column2
+            assert not tail_txt
 
     def draw(self):
         """
@@ -302,11 +302,11 @@ class SelectMenu(Overlay):
 
             y = self.header_height + self.header_pad
 
-            if self.column2:
-                for option, col2 in zip(self.options[self.slice_head:self.slice_tail], 
-                                        self.column2[self.slice_head:self.slice_tail]):
-                    padding = " " * (self.width - len(option) - len(col2) - 2*self.pad)
-                    text = option + padding + col2
+            if self.tail_txt:
+                for option, tail in zip(self.options[self.slice_head:self.slice_tail], 
+                                        self.tail_txt[self.slice_head:self.slice_tail]):
+                    padding = " " * (self.width - len(option) - len(tail) - 2*self.pad)
+                    text = option + padding + tail
                     print_options()
                     y += 1
             else:
@@ -377,10 +377,10 @@ class StandardMenu(SelectMenu):
     and one pixel space between the header and body.
     """
     def __init__(self, align, header, header_align, content_width, ingame, 
-                 options, empty_options, column2, max_options, bindings, escape):
+                 options, empty_options, tail_txt, max_options, bindings, escape):
         SelectMenu.__init__(self, align, header, header_align, content_width + 2, 
                             max_options + 4, ingame, options, empty_options, 
-                            column2, max_options, bindings, escape)
+                            tail_txt, max_options, bindings, escape)
 
 
 class InGameMenu(StandardMenu):
@@ -457,7 +457,7 @@ class InventoryMenu(StandardMenu):
                 if item.name == self.options[self.selection_index]:
                     if self.handler.player.inv[item] == 1 or not item.stackable:
                         del self.options[self.selection_index]
-                        del self.column2[self.selection_index]
+                        del self.tail_txt[self.selection_index]
 
                         if self.selection_index == self.max_selection and self.slice_head > 0:
                             self.slice_head -= 1
@@ -469,9 +469,9 @@ class InventoryMenu(StandardMenu):
 
                         self.max_selection -= 1
                     else:
-                        new_count = int(self.column2[self.selection_index])
+                        new_count = int(self.tail_txt[self.selection_index])
                         new_count -= 1
-                        self.column2[self.selection_index] = str(new_count)
+                        self.tail_txt[self.selection_index] = str(new_count)
 
                     self.handler.player.player_drop(item)
                     break
