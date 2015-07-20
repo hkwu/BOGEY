@@ -122,8 +122,6 @@ class StateHandler(object):
 
     def play(self):
         """Runs the game loop after game data has been set."""
-        rebuild = False
-
         while not libt.console_is_window_closed():
             libt.sys_check_for_event(libt.EVENT_KEY_PRESS | libt.EVENT_MOUSE, 
                                      self.key, self.mouse)
@@ -137,14 +135,10 @@ class StateHandler(object):
             if player_action == data.EXIT:
                 break
             elif player_action == data.REBUILD:
-                rebuild = True
-                break
+                continue
             elif self.game_state == data.PLAY and player_action != data.NO_MOVE:
                 for mob in self.map_objects['mobs']:
                     mob.action_handler()
-
-        if rebuild:
-            self.play()
 
     def draw_obj(self, lst):
         """Takes a list of objects and draws them on the map."""
