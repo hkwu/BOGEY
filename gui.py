@@ -319,7 +319,6 @@ class SelectMenu(Overlay):
             if self.escape:
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
-                        self.active = False
                         return self.status
 
             libt.console_wait_for_keypress(True)
@@ -342,7 +341,8 @@ class SelectMenu(Overlay):
             elif choice.vk == libt.KEY_ENTER and self.options:
                 status = self.bindings[self.selection_index]()
 
-                if status == data.REBUILD and self.header != "BOGEY":
+                if (status == data.REBUILD and 
+                    self.header != self.handler.main_menu.header):
                     return data.REBUILD
                 elif status == data.REBUILD:
                     self.handler.play()

@@ -34,7 +34,7 @@ class StateHandler(object):
             menu.draw()
             status = menu.select()
 
-            if status == data.EXIT or status == data.REBUILD:
+            if status == data.EXIT:
                 return status
             else:
                 return data.NO_MOVE
@@ -134,8 +134,6 @@ class StateHandler(object):
             player_action = self.keybinds()
             if player_action == data.EXIT:
                 break
-            elif player_action == data.REBUILD:
-                continue
             elif self.game_state == data.PLAY and player_action != data.NO_MOVE:
                 for mob in self.map_objects['mobs']:
                     mob.action_handler()
