@@ -221,6 +221,17 @@ class Overlay(GUIElement):
                           0, self.x, self.y, 1.0, 0.7)
 
 
+def longest_str(lst_of_str):
+    """Returns the length of the longest string in a list of strings."""
+    longest = ""
+
+    for string in lst_of_str:
+        if len(string) > len(longest):
+            longest = string
+
+    return len(longest)
+
+
 class SelectMenu(Overlay):
     """
     Class for menu that allows selection of options.
@@ -365,9 +376,9 @@ class StandardMenu(SelectMenu):
     Menu with one pixel border around the edges 
     and one pixel space between the header and body.
     """
-    def __init__(self, align, header, header_align, width, ingame, options, 
-                 empty_options, column2, max_options, bindings, escape):
-        SelectMenu.__init__(self, align, header, header_align, width, 
+    def __init__(self, align, header, header_align, content_width, ingame, 
+                 options, empty_options, column2, max_options, bindings, escape):
+        SelectMenu.__init__(self, align, header, header_align, content_width + 2, 
                             max_options + 4, ingame, options, empty_options, 
                             column2, max_options, bindings, escape)
 
@@ -383,9 +394,9 @@ class InGameMenu(StandardMenu):
             3: self.bind_main_menu
         }
 
-        StandardMenu.__init__(self, data.LEFT, "Options", data.CENTER, 11, 
-                              True, self.options, "", [], 4, self.bindings, 
-                              [libt.KEY_ESCAPE])
+        StandardMenu.__init__(self, data.LEFT, "Options", data.CENTER, 
+                              longest_str(self.options), True, self.options, 
+                              "", [], 4, self.bindings, [libt.KEY_ESCAPE])
 
     def background(self):
         self.handler.render_all()
@@ -476,8 +487,9 @@ class MainMenu(StandardMenu):
             2: self.bind_quit
         }
 
-        StandardMenu.__init__(self, data.LEFT, "BOGEY", data.CENTER, 11, False, 
-                              self.options, "", [], 3, self.bindings, [])
+        StandardMenu.__init__(self, data.LEFT, "BOGEY", data.CENTER, 
+                              longest_str(self.options), False, self.options, 
+                              "", [], 3, self.bindings, [])
 
     def background(self):
         backdrop = libt.image_load(config.IMG_DIR + "title.png")
