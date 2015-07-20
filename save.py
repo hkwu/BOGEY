@@ -21,15 +21,7 @@ class SaveHandler(object):
         Returns list of booleans representing whether 
         or not each save index is filled.
         """
-        lst = []
-
-        for i in range(config.MAX_SAVES):
-            if self.is_save(i):
-                lst.append(True)
-            else:
-                lst.append(False)
-
-        return lst
+        return [self.is_save(i) for i in range(config.MAX_SAVES)]
 
     def add_data(self, key, val, index):
         """
