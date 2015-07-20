@@ -33,6 +33,7 @@ COLOURS = {
 EXIT = "exit"
 PLAY = "play"
 NO_MOVE = "no_move"
+REBUILD = "rebuild"
 
 # Entity states
 HOLD = 0

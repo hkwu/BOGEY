@@ -3,8 +3,12 @@
 # Game settings
 #
 
-# Path for image files
-IMG_PATH = "img/"
+# File paths
+IMG_DIR = "img/"
+SAVE_DIR = "saves/"
+
+# Save data
+MAX_SAVES = 5
 
 # Console dimensions
 SCREEN_WIDTH = 150

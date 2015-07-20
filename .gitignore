@@ -60,3 +60,4 @@ target/
 # Custom
 *.db
 .idea/
+saves/*

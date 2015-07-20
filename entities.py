@@ -333,6 +333,17 @@ class Mob(CombatEntity):
         elif self.state == data.RUN:
             self.run(self.handler.player)
 
+    # Methods to facilitate pickling
+    def __getstate__(self):
+        self.state_chart = None
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.state_chart = [[None, self.in_sight_and_healthy, self.in_sight_and_not_healthy],
+                            [self.not_in_sight, None, self.in_sight_and_not_healthy],
+                            [self.not_in_sight, self.in_sight_and_healthy, None]]
+
 
 class Spider(Mob):
     def __init__(self, x, y):

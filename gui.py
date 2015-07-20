@@ -7,6 +7,7 @@ import textwrap
 import libtcodpy as libt
 import config
 import data
+import save
 
 
 class GUIElement(object):
@@ -169,14 +170,16 @@ class Overlay(GUIElement):
     header_align: alignment of the header; left, centre or right
     width: width of the overlay
     height: height of the overlay
+    ingame: true if overlay is being called while game is in progress
     pad: minimum amount of space on all sides between text and border
     """
-    def __init__(self, header, header_align, width, height, pad=1):
+    def __init__(self, header, header_align, width, height, ingame, pad=1):
         GUIElement.__init__(self)
         self.header = header
         self.header_align = header_align
         self.width = width
         self.height = height
+        self.ingame = ingame
         self.pad = pad
 
         head_height = libt.console_get_height_rect(self.handler.game_map, 0, 0, 
@@ -191,7 +194,11 @@ class Overlay(GUIElement):
         self.y = (config.SCREEN_HEIGHT - 1)/2 - self.height/2
         self.header_height = 1
         self.header_pad = 1
-        
+
+    def background(self):
+        """Draws the contents behind the overlay."""
+        pass
+    
     def draw(self):
         """
         Adds the header to the overlay and blits its contents
@@ -229,10 +236,10 @@ class SelectMenu(Overlay):
     within the menu
     escape: list of keys that dismiss the menu
     """
-    def __init__(self, align, header, header_align, width, height, 
+    def __init__(self, align, header, header_align, width, height, ingame,
                  options, empty_options, column2, max_options, bindings,
                  escape):
-        Overlay.__init__(self, header, header_align, width, height)
+        Overlay.__init__(self, header, header_align, width, height, ingame)
         self.align = align
         self.options = options
         self.empty_options = empty_options
@@ -255,15 +262,16 @@ class SelectMenu(Overlay):
         Prints all the given options up to the specified max_options,
         then draws the background and header.
         """
+        self.background()
         libt.console_clear(self.overlay)
 
         if self.options:
             def print_options():
                 """Prints each option out in a column."""
-                if self.header_align == data.LEFT:
+                if self.align == data.LEFT:
                     self.option_x = self.pad
                     self.libt_align = libt.LEFT
-                elif self.header_align == data.CENTER:
+                elif self.align == data.CENTER:
                     self.option_x = (self.width - 1)/2
                     self.libt_align = libt.CENTER
                 else:
@@ -303,7 +311,7 @@ class SelectMenu(Overlay):
         Overlay.draw(self)
         libt.console_flush()
 
-    def select(self, game_render=True):
+    def select(self):
         """Handles selection of options in the menu."""
         choice = libt.console_check_for_keypress(True)
 
@@ -312,10 +320,7 @@ class SelectMenu(Overlay):
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
                         self.active = False
-                        break
-
-                if not self.active:
-                    break
+                        return self.status
 
             libt.console_wait_for_keypress(True)
             choice = libt.console_wait_for_keypress(True)
@@ -335,14 +340,19 @@ class SelectMenu(Overlay):
                     self.slice_head += 1
                     self.slice_tail += 1
             elif choice.vk == libt.KEY_ENTER and self.options:
-                self.bindings[self.selection_index]()
+                status = self.bindings[self.selection_index]()
+
+                if status == data.REBUILD and self.header != "BOGEY":
+                    return data.REBUILD
+                elif status == data.REBUILD:
+                    self.handler.play()
             else:
                 for key in self.bindings:
                     if chr(choice.c) == key:
                         self.bindings[key]()
                         break
 
-            if game_render:
+            if self.ingame:
                 self.handler.render_all()
 
             self.draw()
@@ -355,11 +365,51 @@ class StandardMenu(SelectMenu):
     Menu with one pixel border around the edges 
     and one pixel space between the header and body.
     """
-    def __init__(self, align, header, header_align, width, options, 
+    def __init__(self, align, header, header_align, width, ingame, options, 
                  empty_options, column2, max_options, bindings, escape):
         SelectMenu.__init__(self, align, header, header_align, width, 
-                            max_options + 4, options, empty_options, 
+                            max_options + 4, ingame, options, empty_options, 
                             column2, max_options, bindings, escape)
+
+
+class InGameMenu(StandardMenu):
+    """Options menu when currently within a game."""
+    def __init__(self):
+        self.options = ["Resume", "Save Game", "Load Game", "Main Menu"]
+        self.bindings = {
+            0: self.bind_resume,
+            1: self.bind_save_menu,
+            2: self.bind_load_menu,
+            3: self.bind_main_menu
+        }
+
+        StandardMenu.__init__(self, data.LEFT, "Options", data.CENTER, 11, 
+                              True, self.options, "", [], 4, self.bindings, 
+                              [libt.KEY_ESCAPE])
+
+    def background(self):
+        self.handler.render_all()
+
+    def bind_resume(self):
+        """Dismisses menu."""
+        self.active = False
+
+    def bind_save_menu(self):
+        """Brings up the save menu."""
+        save_menu = SaveMenu()
+        save_menu.draw()
+        save_menu.select()
+
+    def bind_load_menu(self):
+        """Brings up the load menu."""
+        load_menu = LoadMenu(True)
+        load_menu.draw()
+        return load_menu.select()
+
+    def bind_main_menu(self):
+        """Brings up the main menu."""
+        self.active = False
+        self.status = data.EXIT
 
 
 class InventoryMenu(StandardMenu):
@@ -384,8 +434,8 @@ class InventoryMenu(StandardMenu):
 
             self.bindings[index] = item.use
 
-        StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40, 
-                              self.item_names, "Your inventory is empty.", 
+        StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
+                              True, self.item_names, "Your inventory is empty.", 
                               self.item_qty, config.ITEMS_PER_PAGE, 
                               self.bindings, [libt.KEY_ESCAPE, "i"])
 
@@ -416,51 +466,136 @@ class InventoryMenu(StandardMenu):
                     break
 
 
-class InGameMenu(StandardMenu):
-    """Options menu when currently within a game."""
-    def __init__(self):
-        self.options = ["Resume", "Main Menu"]
-        self.bindings = {
-            0: self.bind_resume,
-            1: self.bind_main_menu
-        }
-
-        StandardMenu.__init__(self, data.CENTER, "Options", data.CENTER, 15, 
-                              self.options, "", [], 2, self.bindings, 
-                              [libt.KEY_ESCAPE])
-
-    def bind_main_menu(self):
-        """Brings up the main menu."""
-        self.active = False
-        self.status = data.EXIT
-
-    def bind_resume(self):
-        """Dismisses menu."""
-        self.active = False
-
-
 class MainMenu(StandardMenu):
     """The main menu."""
     def __init__(self):
-        self.options = ["New Game", "Quit"]
+        self.options = ["New Game", "Load Game", "Quit"]
         self.bindings = {
             0: self.bind_new_game,
-            1: self.bind_quit
+            1: self.bind_load_menu,
+            2: self.bind_quit
         }
 
-        StandardMenu.__init__(self, data.CENTER, "BOGEY", data.CENTER, 15, 
+        StandardMenu.__init__(self, data.LEFT, "BOGEY", data.CENTER, 11, False, 
                               self.options, "", [], 3, self.bindings, [])
 
-    def draw(self):
-        backdrop = libt.image_load(config.IMG_PATH + "title.png")
+    def background(self):
+        backdrop = libt.image_load(config.IMG_DIR + "title.png")
         libt.image_blit_2x(backdrop, 0, 0, 0)
-        StandardMenu.draw(self)
 
     def bind_new_game(self):
         """Starts a new game."""
         self.handler.new_game()
         self.handler.play()
 
+    def bind_load_menu(self):
+        """Brings up the load game menu."""
+        load_menu = LoadMenu(False)
+        load_menu.draw()
+        return load_menu.select()
+
     def bind_quit(self):
         """Exits program."""
         self.active = False
+
+
+class SaveLoadMenu(StandardMenu):
+    """Menu that displays saved games and empty save slots."""
+    def __init__(self, header, ingame):
+        self.save_handler = save.SaveHandler()
+        self.options = []
+        self.occupied = []
+        count = 0
+
+        for save_file in self.save_handler.save_status():
+            self.options.append("Slot {}".format(count + 1))
+
+            if save_file:
+                self.occupied.append("FILLED")
+            else:
+                self.occupied.append("EMPTY")
+
+            count += 1
+
+        StandardMenu.__init__(self, data.LEFT, header, data.CENTER, 30,
+                              ingame, self.options, "", self.occupied, 5, {},
+                              [libt.KEY_ESCAPE])
+
+
+class SaveMenu(SaveLoadMenu):
+    """Menu to save games."""
+    def __init__(self):
+        SaveLoadMenu.__init__(self, "Save Game", True)
+        self.bindings = {}
+
+        for i in range(config.MAX_SAVES):
+            self.bindings[i] = self.bind_save_game
+
+    def background(self):
+        self.handler.render_all()
+
+    def bind_save_game(self):
+        """Saves game at player's current selection index."""
+        if not self.save_handler.is_save(self.selection_index):
+            self.occupied[self.selection_index] = "FILLED"
+
+        self.save_handler.add_data('world', self.handler.world, self.selection_index)
+        self.save_handler.add_data('map_objects', self.handler.map_objects,
+                                   self.selection_index)
+        self.save_handler.add_data('player_index', 
+                                   self.handler.map_objects['characters'].index(self.handler.player),
+                                   self.selection_index)
+        self.save_handler.add_data('messages', self.handler.message_box.messages,
+                                   self.selection_index)
+        self.save_handler.add_data('game_state', self.handler.game_state,
+                                   self.selection_index)
+        self.save_handler.add_data('player_action', self.handler.player_action,
+                                   self.selection_index)
+
+
+class LoadMenu(SaveLoadMenu):
+    """Menu to load games."""
+    def __init__(self, ingame):
+        SaveLoadMenu.__init__(self, "Load Game", ingame)
+        status = self.save_handler.save_status()
+        self.bindings = {}
+
+        for i in range(config.MAX_SAVES):
+            if status[i]:
+                self.bindings[i] = self.bind_load_game
+            else:
+                self.bindings[i] = lambda: None
+
+    def background(self):
+        if self.ingame:
+            self.handler.render_all()
+        else:
+            backdrop = libt.image_load(config.IMG_DIR + "title.png")
+            libt.image_blit_2x(backdrop, 0, 0, 0)
+
+    def bind_load_game(self):
+        """Loads game at player's current selection index, if possible."""
+        if self.save_handler.is_save(self.selection_index):
+            self.active = False
+            
+            self.handler.world = self.save_handler.get_data('world', self.selection_index)
+            self.handler.map_objects = self.save_handler.get_data('map_objects',
+                                                                  self.selection_index)
+            player_index = self.save_handler.get_data('player_index', self.selection_index)
+            self.handler.player = self.handler.map_objects['characters'][player_index]
+            self.handler.game_state = self.save_handler.get_data('game_state',
+                                                                 self.selection_index)
+            self.handler.player_action = self.save_handler.get_data('player_action',
+                                                                    self.selection_index)
+
+            if not self.ingame:
+                self.ingame = True
+                self.handler.init_gui()
+            else:
+                libt.console_clear(self.handler.game_map)
+
+            self.handler.message_box.messages = self.save_handler.get_data('messages',
+                                                                           self.selection_index)
+
+            self.handler.init_fov()
+            return data.REBUILD
