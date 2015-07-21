@@ -327,6 +327,8 @@ class SelectMenu(Overlay):
         choice = libt.console_check_for_keypress(True)
 
         while self.active:
+            self.background()
+
             if self.escape:
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
@@ -362,9 +364,6 @@ class SelectMenu(Overlay):
                     if chr(choice.c) == key:
                         self.bindings[key]()
                         break
-
-            if self.ingame:
-                self.handler.render_all()
 
             self.draw()
 
@@ -449,6 +448,9 @@ class InventoryMenu(StandardMenu):
                               True, self.item_names, "Your inventory is empty.", 
                               self.item_qty, config.ITEMS_PER_PAGE, 
                               self.bindings, [libt.KEY_ESCAPE, "i"])
+
+    def background(self):
+        self.handler.render_all()
 
     def bind_drop(self):
         """Binding for dropping an item."""
