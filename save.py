@@ -14,7 +14,7 @@ class SaveHandler(object):
 
     def is_save(self, index):
         """Returns true if a save file exists in given index."""
-        return os.path.isfile(config.SAVE_DIR + "save_" + str(index))
+        return os.path.isfile(config.get_save_path(index))
 
     def save_status(self):
         """
@@ -31,7 +31,7 @@ class SaveHandler(object):
         if not os.path.exists(config.SAVE_DIR):
             os.makedirs(config.SAVE_DIR)
 
-        savefile = shelve.open(config.SAVE_DIR + "save_" + str(index))
+        savefile = shelve.open(config.get_save_path(index))
         savefile[key] = val
         savefile.close()
 
@@ -42,10 +42,19 @@ class SaveHandler(object):
         """
         assert self.is_save(index)
 
-        savefile = shelve.open(config.SAVE_DIR + "save_" + str(index), "r")
+        savefile = shelve.open(os.path.join(config.get_save_path(index)), "r")
         assert key in savefile
 
         value = savefile[key]
         savefile.close()
 
         return value
+
+    def delete_save(self, index):
+        """
+        Deletes the save file with given index. 
+        Requires that the file exists.
+        """
+        path = config.get_save_path(index)
+        assert os.path.isfile(path)
+        os.remove(path)

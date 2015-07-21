@@ -3,9 +3,28 @@
 # Game settings
 #
 
+import os
+
 # File paths
-IMG_DIR = "img/"
-SAVE_DIR = "saves/"
+IMG_DIR = "img"
+IMG_FILES = {
+    'title': "title.png",
+    'char_sheet': "dejavu10x10_gs_tc.png"
+}
+SAVE_DIR = "saves"
+
+
+def get_img_path(key):
+    """Returns the path of the image with given key."""
+    return os.path.join(IMG_DIR, IMG_FILES[key])
+
+
+def get_save_path(index):
+    """
+    Returns the path of the save with given index 
+    (which may or may not exist).
+    """
+    return os.path.join(SAVE_DIR, "save_" + str(index))
 
 # Save data
 MAX_SAVES = 5

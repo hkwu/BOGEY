@@ -492,7 +492,7 @@ class MainMenu(StandardMenu):
                               "", [], 3, self.bindings, [])
 
     def background(self):
-        backdrop = libt.image_load(config.IMG_DIR + "title.png")
+        backdrop = libt.image_load(config.get_img_path('title'))
         libt.image_blit_2x(backdrop, 0, 0, 0)
 
     def bind_new_game(self):
@@ -517,6 +517,9 @@ class SaveLoadMenu(StandardMenu):
         self.save_handler = save.SaveHandler()
         self.options = []
         self.occupied = []
+        self.bindings = {
+            'd': self.bind_delete_save
+        }
         count = 0
 
         for save_file in self.save_handler.save_status():
@@ -530,15 +533,20 @@ class SaveLoadMenu(StandardMenu):
             count += 1
 
         StandardMenu.__init__(self, data.LEFT, header, data.CENTER, 30,
-                              ingame, self.options, "", self.occupied, 5, {},
-                              [libt.KEY_ESCAPE])
+                              ingame, self.options, "", self.occupied, 5, 
+                              self.bindings, [libt.KEY_ESCAPE])
+
+    def bind_delete_save(self):
+        """Deletes selected save file."""
+        if self.occupied[self.selection_index] == "FILLED":
+            self.occupied[self.selection_index] = "EMPTY"
+            self.save_handler.delete_save(self.selection_index)
 
 
 class SaveMenu(SaveLoadMenu):
     """Menu to save games."""
     def __init__(self):
         SaveLoadMenu.__init__(self, "Save Game", True)
-        self.bindings = {}
 
         for i in range(config.MAX_SAVES):
             self.bindings[i] = self.bind_save_game
@@ -570,7 +578,6 @@ class LoadMenu(SaveLoadMenu):
     def __init__(self, ingame):
         SaveLoadMenu.__init__(self, "Load Game", ingame)
         status = self.save_handler.save_status()
-        self.bindings = {}
 
         for i in range(config.MAX_SAVES):
             if status[i]:
@@ -582,7 +589,7 @@ class LoadMenu(SaveLoadMenu):
         if self.ingame:
             self.handler.render_all()
         else:
-            backdrop = libt.image_load(config.IMG_DIR + "title.png")
+            backdrop = libt.image_load(config.get_img_path('title'))
             libt.image_blit_2x(backdrop, 0, 0, 0)
 
     def bind_load_game(self):

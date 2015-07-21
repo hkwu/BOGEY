@@ -4,6 +4,7 @@
 #
 
 import collections
+import os
 import random
 import libtcodpy as libt
 import config
@@ -61,7 +62,7 @@ class StateHandler(object):
 
     def init_program(self):
         """Setup method that is run when program starts."""
-        libt.console_set_custom_font(config.IMG_DIR + "dejavu10x10_gs_tc.png", 
+        libt.console_set_custom_font(config.get_img_path('char_sheet'), 
                                      libt.FONT_TYPE_GREYSCALE 
                                      | libt.FONT_LAYOUT_TCOD)
         libt.console_init_root(config.SCREEN_WIDTH, config.SCREEN_HEIGHT, 
