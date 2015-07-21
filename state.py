@@ -4,7 +4,6 @@
 #
 
 import collections
-import os
 import random
 import libtcodpy as libt
 import config
