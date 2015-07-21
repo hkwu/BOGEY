@@ -327,8 +327,6 @@ class SelectMenu(Overlay):
         choice = libt.console_check_for_keypress(True)
 
         while self.active:
-            self.background()
-
             if self.escape:
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
