@@ -356,6 +356,7 @@ class SelectMenu(Overlay):
                     self.header != self.handler.main_menu.header):
                     return data.REBUILD
                 elif status == data.REBUILD:
+                    self.selection_index = 0
                     self.handler.play()
             else:
                 for key in self.bindings:
