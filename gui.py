@@ -384,8 +384,8 @@ class StandardMenu(SelectMenu):
 class InGameMenu(StandardMenu):
     """Options menu when currently within a game."""
     def __init__(self):
-        self.options = ["Resume", "Save Game", "Load Game", "Main Menu"]
-        self.bindings = {
+        options = ["Resume", "Save Game", "Load Game", "Main Menu"]
+        bindings = {
             0: self.bind_resume,
             1: self.bind_save_menu,
             2: self.bind_load_menu,
@@ -393,8 +393,8 @@ class InGameMenu(StandardMenu):
         }
 
         StandardMenu.__init__(self, data.LEFT, "Options", data.CENTER, 
-                              longest_str(self.options), True, self.options, 
-                              "", [], 4, self.bindings, [libt.KEY_ESCAPE])
+                              longest_str(options), True, options, 
+                              "", [], 4, bindings, [libt.KEY_ESCAPE])
 
     def background(self):
         self.handler.render_all()
@@ -424,29 +424,29 @@ class InGameMenu(StandardMenu):
 class InventoryMenu(StandardMenu):
     """Popup that appears when entering inventory view."""
     def __init__(self):
-        self.bindings = {
+        bindings = {
             'd': self.bind_drop
         }
 
-        self.item_names = []
-        self.item_qty = []
+        item_names = []
+        item_qty = []
         index = 0
 
         for item in self.handler.player.inv:
             if not item.stackable:
                 for i in range(self.handler.player.inv[item]):
-                    self.item_names.append(item.name)
-                    self.item_qty.append("")
+                    item_names.append(item.name)
+                    item_qty.append("")
             else:
-                self.item_names.append(item.name)
-                self.item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
+                item_names.append(item.name)
+                item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
-            self.bindings[index] = item.use
+            bindings[index] = item.use
 
         StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
-                              True, self.item_names, "Your inventory is empty.", 
-                              self.item_qty, config.ITEMS_PER_PAGE, 
-                              self.bindings, [libt.KEY_ESCAPE, "i"])
+                              True, item_names, "Your inventory is empty.", 
+                              item_qty, config.ITEMS_PER_PAGE, 
+                              bindings, [libt.KEY_ESCAPE, "i"])
 
     def background(self):
         self.handler.render_all()
@@ -481,16 +481,16 @@ class InventoryMenu(StandardMenu):
 class MainMenu(StandardMenu):
     """The main menu."""
     def __init__(self):
-        self.options = ["New Game", "Load Game", "Quit"]
-        self.bindings = {
+        options = ["New Game", "Load Game", "Quit"]
+        bindings = {
             0: self.bind_new_game,
             1: self.bind_load_menu,
             2: self.bind_quit
         }
 
         StandardMenu.__init__(self, data.LEFT, "BOGEY", data.CENTER, 
-                              longest_str(self.options), False, self.options, 
-                              "", [], 3, self.bindings, [])
+                              longest_str(options), False, options, 
+                              "", [], 3, bindings, [])
 
     def background(self):
         backdrop = libt.image_load(config.get_img_path('title'))
@@ -516,31 +516,31 @@ class SaveLoadMenu(StandardMenu):
     """Menu that displays saved games and empty save slots."""
     def __init__(self, header, ingame):
         self.save_handler = save.SaveHandler()
-        self.options = []
-        self.occupied = []
-        self.bindings = {
+        options = []
+        occupied = []
+        bindings = {
             'd': self.bind_delete_save
         }
         count = 0
 
         for save_file in self.save_handler.save_status():
-            self.options.append("Slot {}".format(count + 1))
+            options.append("Slot {}".format(count + 1))
 
             if save_file:
-                self.occupied.append("FILLED")
+                occupied.append("FILLED")
             else:
-                self.occupied.append("EMPTY")
+                occupied.append("EMPTY")
 
             count += 1
 
         StandardMenu.__init__(self, data.LEFT, header, data.CENTER, 30,
-                              ingame, self.options, "", self.occupied, 5, 
-                              self.bindings, [libt.KEY_ESCAPE])
+                              ingame, options, "", occupied, 5, bindings, 
+                              [libt.KEY_ESCAPE])
 
     def bind_delete_save(self):
         """Deletes selected save file."""
-        if self.occupied[self.selection_index] == "FILLED":
-            self.occupied[self.selection_index] = "EMPTY"
+        if self.tail_txt[self.selection_index] == "FILLED":
+            self.tail_txt[self.selection_index] = "EMPTY"
             self.save_handler.delete_save(self.selection_index)
 
 
@@ -558,7 +558,7 @@ class SaveMenu(SaveLoadMenu):
     def bind_save_game(self):
         """Saves game at player's current selection index."""
         if not self.save_handler.is_save(self.selection_index):
-            self.occupied[self.selection_index] = "FILLED"
+            self.tail_txt[self.selection_index] = "FILLED"
 
         save_data = {
             'world': self.handler.world,
@@ -595,7 +595,6 @@ class LoadMenu(SaveLoadMenu):
         """Loads game at player's current selection index, if possible."""
         if self.save_handler.is_save(self.selection_index):
             if not self.ingame:
-                self.ingame = True
                 self.handler.new_game()
             else:
                 libt.console_clear(self.handler.game_map)
