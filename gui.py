@@ -560,18 +560,16 @@ class SaveMenu(SaveLoadMenu):
         if not self.save_handler.is_save(self.selection_index):
             self.occupied[self.selection_index] = "FILLED"
 
-        self.save_handler.add_data('world', self.handler.world, self.selection_index)
-        self.save_handler.add_data('map_objects', self.handler.map_objects,
-                                   self.selection_index)
-        self.save_handler.add_data('player_index', 
-                                   self.handler.map_objects['characters'].index(self.handler.player),
-                                   self.selection_index)
-        self.save_handler.add_data('messages', self.handler.message_box.messages,
-                                   self.selection_index)
-        self.save_handler.add_data('game_state', self.handler.game_state,
-                                   self.selection_index)
-        self.save_handler.add_data('player_action', self.handler.player_action,
-                                   self.selection_index)
+        save_data = {
+            'world': self.handler.world,
+            'map_objects': self.handler.map_objects,
+            'player_index': self.handler.map_objects['characters'].index(self.handler.player),
+            'messages': self.handler.message_box.messages,
+            'game_state': self.handler.game_state,
+            'player_action': self.handler.player_action
+        }
+
+        self.save_handler.add_data(save_data, self.selection_index)
 
 
 class LoadMenu(SaveLoadMenu):
@@ -596,26 +594,20 @@ class LoadMenu(SaveLoadMenu):
     def bind_load_game(self):
         """Loads game at player's current selection index, if possible."""
         if self.save_handler.is_save(self.selection_index):
-            self.active = False
-            
-            self.handler.world = self.save_handler.get_data('world', self.selection_index)
-            self.handler.map_objects = self.save_handler.get_data('map_objects',
-                                                                  self.selection_index)
-            player_index = self.save_handler.get_data('player_index', self.selection_index)
-            self.handler.player = self.handler.map_objects['characters'][player_index]
-            self.handler.game_state = self.save_handler.get_data('game_state',
-                                                                 self.selection_index)
-            self.handler.player_action = self.save_handler.get_data('player_action',
-                                                                    self.selection_index)
-
             if not self.ingame:
                 self.ingame = True
-                self.handler.init_gui()
+                self.handler.new_game()
             else:
                 libt.console_clear(self.handler.game_map)
 
-            self.handler.message_box.messages = self.save_handler.get_data('messages',
-                                                                           self.selection_index)
+            save_data = self.save_handler.get_data(self.selection_index)
 
+            self.handler.world = save_data['world']
+            self.handler.map_objects = save_data['map_objects']
+            self.handler.player = self.handler.map_objects['characters'][save_data['player_index']]
+            self.handler.game_state = save_data['game_state']
+            self.handler.player_action = save_data['player_action']
+            self.handler.message_box.messages = save_data['messages']
             self.handler.init_fov()
+
             return data.REBUILD

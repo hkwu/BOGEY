@@ -23,32 +23,35 @@ class SaveHandler(object):
         """
         return [self.is_save(i) for i in range(config.MAX_SAVES)]
 
-    def add_data(self, key, val, index):
+    def add_data(self, data, index):
         """
-        Adds a key/value pair to the save file at index.
+        Adds all key/value pairs in data to the save file at index.
         Creates the file if it does not exist.
         """
         if not os.path.exists(config.SAVE_DIR):
             os.makedirs(config.SAVE_DIR)
 
         savefile = shelve.open(config.get_save_path(index))
-        savefile[key] = val
+        for key, val in data.iteritems():
+            savefile[key] = val
+
         savefile.close()
 
-    def get_data(self, key, index):
+    def get_data(self, index):
         """
-        Returns the value of the given key in the save file at index.
-        Requires that the file and key exists.
+        Returns a dictionary of stored data at save with given index.
+        Requires that the file exists.
         """
         assert self.is_save(index)
 
-        savefile = shelve.open(os.path.join(config.get_save_path(index)), "r")
-        assert key in savefile
+        savefile = shelve.open(config.get_save_path(index), "r")
+        data = {}
 
-        value = savefile[key]
+        for key, val in savefile.iteritems():
+            data[key] = val
+
         savefile.close()
-
-        return value
+        return data
 
     def delete_save(self, index):
         """
