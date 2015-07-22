@@ -324,17 +324,14 @@ class SelectMenu(Overlay):
 
     def select(self):
         """Handles selection of options in the menu."""
-        choice = libt.console_check_for_keypress(True)
-
         while self.active:
+            choice = libt.console_check_for_keypress(True)
+
             if self.escape:
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
                         return self.status
-
-            libt.console_wait_for_keypress(True)
-            choice = libt.console_wait_for_keypress(True)
-
+            
             if choice.vk == libt.KEY_UP:
                 if self.selection_index > self.slice_head:
                     self.selection_index -= 1
@@ -349,6 +346,8 @@ class SelectMenu(Overlay):
                     self.selection_index += 1
                     self.slice_head += 1
                     self.slice_tail += 1
+            elif choice.vk == libt.KEY_ENTER and choice.lalt:
+                libt.console_set_fullscreen(not libt.console_is_fullscreen())
             elif choice.vk == libt.KEY_ENTER and self.options:
                 status = self.bindings[self.selection_index]()
 
