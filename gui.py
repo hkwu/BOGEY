@@ -349,14 +349,15 @@ class SelectMenu(Overlay):
             elif choice.vk == libt.KEY_ENTER and choice.lalt:
                 libt.console_set_fullscreen(not libt.console_is_fullscreen())
             elif choice.vk == libt.KEY_ENTER and self.options:
-                status = self.bindings[self.selection_index]()
+                if self.selection_index in self.bindings:
+                    status = self.bindings[self.selection_index]()
 
-                if (status == data.REBUILD and 
-                    self.header != self.handler.main_menu.header):
-                    return data.REBUILD
-                elif status == data.REBUILD:
-                    self.selection_index = 0
-                    self.handler.play()
+                    if (status == data.REBUILD and 
+                        self.header != self.handler.main_menu.header):
+                        return data.REBUILD
+                    elif status == data.REBUILD:
+                        self.selection_index = 0
+                        self.handler.play()
             else:
                 for key in self.bindings:
                     if chr(choice.c) == key:
@@ -580,8 +581,6 @@ class LoadMenu(SaveLoadMenu):
         for i in range(config.MAX_SAVES):
             if status[i]:
                 self.bindings[i] = self.bind_load_game
-            else:
-                self.bindings[i] = lambda: None
 
     def background(self):
         if self.ingame:
