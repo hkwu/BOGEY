@@ -123,6 +123,8 @@ class Map(object):
                     self.handler.map_objects['items'].append(entities.WoodenSword(item_x, item_y))
                 elif item == 1:
                     self.handler.map_objects['items'].append(entities.StoneSword(item_x, item_y))
+                elif item == 2:
+                    self.handler.map_objects['items'].append(entities.HealthPotion(item_x, item_y))
 
             count -= 1
 

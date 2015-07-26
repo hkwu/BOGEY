@@ -129,6 +129,13 @@ class CombatEntity(LivingEntity):
         self.max_hp = hp
         self.atk = atk
 
+    def heal_damage(self, heal):
+        """Raises entity's health up to max_hp."""
+        if self.hp + heal < self.max_hp:
+            self.hp += heal
+        else:
+            self.hp = self.max_hp
+
     def take_damage(self, damage):
         """Deals damage to current entity."""
         if self.hp - damage <= 0:
@@ -405,3 +412,39 @@ class WoodenSword(Sword):
 class StoneSword(Sword):
     def __init__(self, x, y):
         Sword.__init__(self, x, y, "Stone Sword", 15, 75, 37)
+
+
+class Consumable(Item):
+    """Items that disappear when used."""
+    def __init__(self, x, y, name, char, weight, value, stackable):
+        Item.__init__(self, x, y, name, char, data.COLOURS['consumables'], 
+                      weight, value, True, stackable)
+
+    def use(self):
+        self.handler.player.remove_from_inv(self)
+        self.handler.message_box.add_msg("You used a {}!".format(self.name),
+                                         data.COLOURS['player_use_item_text'])
+
+
+class Potion(Consumable):
+    """
+    Potion class.
+
+    potency: if potion adds or subtracts from player's stats,
+    this value is added or subtracted
+    """
+    def __init__(self, x, y, name, weight, value, potency=0):
+        Consumable.__init__(self, x, y, name, "!", weight, value, True)
+        self.potency = potency
+
+
+class HealthPotion(Potion):
+    def __init__(self, x, y):
+        Potion.__init__(self, x, y, "Health Potion", 1, 5, 50)
+
+    def use(self):
+        self.handler.inv_menu.remove_option(self)
+        self.handler.player.heal_damage(self.potency)
+        self.handler.message_box.add_msg("You regain {} HP!".format(self.potency),
+                                         data.COLOURS['player_gain_hp_text'])
+        Consumable.use(self)

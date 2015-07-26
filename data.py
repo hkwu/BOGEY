@@ -26,7 +26,10 @@ COLOURS = {
     'player_kill_text': libt.green,
     'player_die_text': libt.white,
     'player_item_text': libt.azure,
-    'weapons': libt.copper
+    'player_use_item_text': libt.Color(215, 223, 1),
+    'player_gain_hp_text': libt.Color(255, 64, 0),
+    'weapons': libt.copper,
+    'consumables': libt.Color(191, 0, 255)
 }
 
 # Game states

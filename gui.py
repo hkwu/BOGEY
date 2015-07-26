@@ -438,11 +438,15 @@ class InventoryMenu(StandardMenu):
                 for i in range(self.handler.player.inv[item]):
                     item_names.append(item.name)
                     item_qty.append("")
+                    
+                    bindings[index] = item.use
+                    index += 1
             else:
                 item_names.append(item.name)
                 item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
-            bindings[index] = item.use
+                bindings[index] = item.use
+                index += 1
 
         StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
                               True, item_names, "Your inventory is empty.", 
@@ -452,29 +456,35 @@ class InventoryMenu(StandardMenu):
     def background(self):
         self.handler.render_all()
 
+    def remove_option(self, item):
+        """
+        Takes an item in player's inventory and decreases its count in
+        the list of options, removing it altogether when appropriate.
+        """
+        item_count = self.handler.player.inv[item]
+
+        if item_count == 1 or not item.stackable:
+            del self.options[self.selection_index]
+            del self.tail_txt[self.selection_index]
+
+            if self.selection_index == self.max_selection and self.slice_head > 0:
+                self.slice_head -= 1
+                self.slice_tail -= 1
+                self.selection_index -= 1
+            elif self.selection_index == self.max_selection:
+                self.slice_tail -= 1
+                self.selection_index -= 1
+
+            self.max_selection -= 1
+        else:
+            self.tail_txt[self.selection_index] = "Qty: {}".format(item_count - 1)
+
     def bind_drop(self):
         """Binding for dropping an item."""
         if self.options:
             for item in self.handler.player.inv:
                 if item.name == self.options[self.selection_index]:
-                    if self.handler.player.inv[item] == 1 or not item.stackable:
-                        del self.options[self.selection_index]
-                        del self.tail_txt[self.selection_index]
-
-                        if self.selection_index == self.max_selection and self.slice_head > 0:
-                            self.slice_head -= 1
-                            self.slice_tail -= 1
-                            self.selection_index -= 1
-                        elif self.selection_index == self.max_selection:
-                            self.slice_tail -= 1
-                            self.selection_index -= 1
-
-                        self.max_selection -= 1
-                    else:
-                        new_count = int(self.tail_txt[self.selection_index])
-                        new_count -= 1
-                        self.tail_txt[self.selection_index] = str(new_count)
-
+                    self.remove_option(item)
                     self.handler.player.player_drop(item)
                     break
 
