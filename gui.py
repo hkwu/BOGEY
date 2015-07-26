@@ -166,6 +166,8 @@ class Overlay(GUIElement):
     Base class for anything that pops up over the game screen.
     Requires that the given header is exactly one line high.
 
+    x: top-left x-coordinate to blit the overlay
+    y: top-left y-coordinate to blit the overlay
     header: title of the overlay
     header_align: alignment of the header; left, centre or right
     width: width of the overlay
@@ -173,8 +175,10 @@ class Overlay(GUIElement):
     ingame: true if overlay is being called while game is in progress
     pad: minimum amount of space on all sides between text and border
     """
-    def __init__(self, header, header_align, width, height, ingame, pad=1):
+    def __init__(self, x, y, header, header_align, width, height, ingame, pad):
         GUIElement.__init__(self)
+        self.x = x
+        self.y = y
         self.header = header
         self.header_align = header_align
         self.width = width
@@ -182,17 +186,14 @@ class Overlay(GUIElement):
         self.ingame = ingame
         self.pad = pad
 
-        head_height = libt.console_get_height_rect(self.handler.game_map, 0, 0, 
-                                                   config.SCREEN_WIDTH, 
-                                                   config.SCREEN_HEIGHT, 
-                                                   self.header)
-        assert head_height == 1
+        self.header_height = libt.console_get_height_rect(self.handler.game_map, 0, 0, 
+                                                          config.SCREEN_WIDTH, 
+                                                          config.SCREEN_HEIGHT, 
+                                                          self.header)
+        assert self.header_height == 1
 
         # Initialize overlay and define some parameters
         self.overlay = libt.console_new(self.width, self.height)
-        self.x = (config.SCREEN_WIDTH - 1)/2 - self.width/2
-        self.y = (config.SCREEN_HEIGHT - 1)/2 - self.height/2
-        self.header_height = 1
         self.header_pad = 1
 
     def background(self):
@@ -221,18 +222,16 @@ class Overlay(GUIElement):
                           0, self.x, self.y, 1.0, 0.7)
 
 
-def longest_str(lst_of_str):
-    """Returns the length of the longest string in a list of strings."""
-    longest = ""
-
-    for string in lst_of_str:
-        if len(string) > len(longest):
-            longest = string
-
-    return len(longest)
+class CenteredOverlay(Overlay):
+    """Overlay that is centered on the program window."""
+    def __init__(self, header, header_align, width, height, ingame, pad):
+        x = (config.SCREEN_WIDTH - 1)/2 - width/2
+        y = (config.SCREEN_HEIGHT - 1)/2 - height/2
+        Overlay.__init__(self, x, y, header, header_align, 
+                         width, height, ingame, pad)
 
 
-class SelectMenu(Overlay):
+class SelectMenu(CenteredOverlay):
     """
     Class for menu that allows selection of options.
 
@@ -249,8 +248,8 @@ class SelectMenu(Overlay):
     """
     def __init__(self, align, header, header_align, width, height, ingame,
                  options, empty_options, tail_txt, max_options, bindings,
-                 escape):
-        Overlay.__init__(self, header, header_align, width, height, ingame)
+                 escape, pad):
+        CenteredOverlay.__init__(self, header, header_align, width, height, ingame, pad)
         self.align = align
         self.options = options
         self.empty_options = empty_options
@@ -330,7 +329,7 @@ class SelectMenu(Overlay):
             if self.escape:
                 for key in self.escape:
                     if choice.vk == key or chr(choice.c) == key:
-                        return self.status
+                        return
             
             if choice.vk == libt.KEY_UP:
                 if self.selection_index > self.slice_head:
@@ -372,13 +371,13 @@ class SelectMenu(Overlay):
 class StandardMenu(SelectMenu):
     """
     Menu with one pixel border around the edges 
-    and one pixel space between the header and body.
+    and one character space between the header and body.
     """
     def __init__(self, align, header, header_align, content_width, ingame, 
                  options, empty_options, tail_txt, max_options, bindings, escape):
         SelectMenu.__init__(self, align, header, header_align, content_width + 2, 
                             max_options + 4, ingame, options, empty_options, 
-                            tail_txt, max_options, bindings, escape)
+                            tail_txt, max_options, bindings, escape, 1)
 
 
 class InGameMenu(StandardMenu):
@@ -608,3 +607,15 @@ class LoadMenu(SaveLoadMenu):
             self.handler.init_fov()
 
             return data.REBUILD
+
+
+# Miscellaneous functions
+def longest_str(lst_of_str):
+    """Returns the length of the longest string in a list of strings."""
+    longest = ""
+
+    for string in lst_of_str:
+        if len(string) > len(longest):
+            longest = string
+
+    return len(longest)
