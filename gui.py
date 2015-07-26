@@ -222,16 +222,7 @@ class Overlay(GUIElement):
                           0, self.x, self.y, 1.0, 0.7)
 
 
-class CenteredOverlay(Overlay):
-    """Overlay that is centered on the program window."""
-    def __init__(self, header, header_align, width, height, ingame, pad):
-        x = (config.SCREEN_WIDTH - 1)/2 - width/2
-        y = (config.SCREEN_HEIGHT - 1)/2 - height/2
-        Overlay.__init__(self, x, y, header, header_align, 
-                         width, height, ingame, pad)
-
-
-class SelectMenu(CenteredOverlay):
+class SelectMenu(Overlay):
     """
     Class for menu that allows selection of options.
 
@@ -246,10 +237,10 @@ class SelectMenu(CenteredOverlay):
     within the menu
     escape: list of keys that dismiss the menu
     """
-    def __init__(self, align, header, header_align, width, height, ingame,
+    def __init__(self, x, y, align, header, header_align, width, height, ingame,
                  options, empty_options, tail_txt, max_options, bindings,
                  escape, pad):
-        CenteredOverlay.__init__(self, header, header_align, width, height, ingame, pad)
+        Overlay.__init__(self, x, y, header, header_align, width, height, ingame, pad)
         self.align = align
         self.options = options
         self.empty_options = empty_options
@@ -372,10 +363,21 @@ class StandardMenu(SelectMenu):
     """
     Menu with one pixel border around the edges 
     and one character space between the header and body.
+    x and y-coordinates default to middle of screen if not provided.
     """
     def __init__(self, align, header, header_align, content_width, ingame, 
-                 options, empty_options, tail_txt, max_options, bindings, escape):
-        SelectMenu.__init__(self, align, header, header_align, content_width + 2, 
+                 options, empty_options, tail_txt, max_options, bindings, escape,
+                 x=None, y=None):
+        width = content_width + 2
+        height = max_options + 4
+
+        if not x:
+            x = (config.SCREEN_WIDTH - 1)/2 - width/2
+
+        if not y:
+            y = (config.SCREEN_HEIGHT - 1)/2 - height/2
+
+        SelectMenu.__init__(self, x, y, align, header, header_align, content_width + 2, 
                             max_options + 4, ingame, options, empty_options, 
                             tail_txt, max_options, bindings, escape, 1)
 
@@ -487,9 +489,11 @@ class MainMenu(StandardMenu):
             2: self.bind_quit
         }
 
+        y = config.SCREEN_HEIGHT/2 + len(options)
+
         StandardMenu.__init__(self, data.LEFT, "BOGEY", data.CENTER, 
                               longest_str(options), False, options, 
-                              "", [], 3, bindings, [])
+                              "", [], 3, bindings, [], None, y)
 
     def background(self):
         backdrop = libt.image_load(config.get_img_path('title'))
