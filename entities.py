@@ -3,6 +3,7 @@
 # Classes for entities such as mobs and items
 #
 
+import collections
 import copy
 import math
 import random
@@ -58,7 +59,7 @@ class LivingEntity(Entity):
     """Class for entities that are alive."""
     def __init__(self, x, y, name, char, colour):
         Entity.__init__(self, x, y, name, char, colour, True)
-        self.inv = {}
+        self.inv = collections.OrderedDict()
 
     def add_to_inv(self, item):
         """Adds the item to entity's inventory."""
