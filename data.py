@@ -27,7 +27,7 @@ COLOURS = {
     'player_die_text': libt.white,
     'player_item_text': libt.azure,
     'player_use_item_text': libt.Color(215, 223, 1),
-    'player_gain_hp_text': libt.Color(255, 64, 0),
+    'player_gain_hp_text': libt.green,
     'weapons': libt.copper,
     'consumables': libt.Color(191, 0, 255)
 }
