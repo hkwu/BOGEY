@@ -426,8 +426,10 @@ class InventoryMenu(StandardMenu):
     """Popup that appears when entering inventory view."""
     def __init__(self):
         bindings = {
-            'd': self.bind_drop
+            'd': self.bind_drop,
+            'e': self.bind_use_item
         }
+        self.item_use_bindings = {}
 
         item_names = []
         item_qty = []
@@ -439,13 +441,13 @@ class InventoryMenu(StandardMenu):
                     item_names.append(item.name)
                     item_qty.append("")
                     
-                    bindings[index] = item.use
+                    self.item_use_bindings[index] = item.use
                     index += 1
             else:
                 item_names.append(item.name)
                 item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
-                bindings[index] = item.use
+                self.item_use_bindings[index] = item.use
                 index += 1
 
         StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
@@ -460,6 +462,7 @@ class InventoryMenu(StandardMenu):
         """
         Takes an item in player's inventory and decreases its count in
         the list of options, removing it altogether when appropriate.
+        Returns current count of the item in player's inventory.
         """
         item_count = self.handler.player.inv[item]
 
@@ -471,13 +474,15 @@ class InventoryMenu(StandardMenu):
                 self.slice_head -= 1
                 self.slice_tail -= 1
                 self.selection_index -= 1
-            elif self.selection_index == self.max_selection:
+            elif self.selection_index == self.max_selection and self.selection_index > 0:
                 self.slice_tail -= 1
                 self.selection_index -= 1
 
             self.max_selection -= 1
         else:
             self.tail_txt[self.selection_index] = "Qty: {}".format(item_count - 1)
+
+        return item_count
 
     def bind_drop(self):
         """Binding for dropping an item."""
@@ -487,6 +492,17 @@ class InventoryMenu(StandardMenu):
                     self.remove_option(item)
                     self.handler.player.player_drop(item)
                     break
+
+    def bind_use_item(self):
+        """Wrapper for inventory items' use() method."""
+        if self.selection_index in self.item_use_bindings:
+            used = self.item_use_bindings[self.selection_index]()
+
+            if used.consumable:
+                if self.remove_option(used) == 1:
+                    self.item_use_bindings.pop(self.selection_index)
+
+                self.handler.player.remove_from_inv(used)
 
 
 class MainMenu(StandardMenu):

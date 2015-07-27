@@ -370,21 +370,29 @@ class Item(Entity):
     weight: the amount of weight the item gets in the inventory
     value: how much the item can be sold to NPCs
     usable: whether or not the item has effects that can be triggered
+    consumable: whether or not the item will disappear after being used,
+    requires that item is usable
     stackable: if true, the item will be grouped with other items
     that are the same in player's inventory
     """
     def __init__(self, x, y, name, char, colour, weight, value, 
-                 usable=False, stackable=True):
+                 usable=False, consumable=False, stackable=True):
         Entity.__init__(self, x, y, name, char, colour)
         self.weight = weight
         self.value = value
         self.usable = usable
         self.stackable = stackable
 
+        if consumable:
+            assert usable
+
+        self.consumable = consumable
+
     def use(self):
         """Uses the item."""
         # DEBUG
         print("You use the {}!".format(self.name))
+        return self
 
 
 class Weapon(Item):
@@ -395,7 +403,7 @@ class Weapon(Item):
     """
     def __init__(self, x, y, name, weight, value, damage):
         Item.__init__(self, x, y, name, "|", 
-                      data.COLOURS['weapons'], weight, value, True, False)
+                      data.COLOURS['weapons'], weight, value, True, False, False)
         self.damage = damage
 
 
@@ -419,10 +427,9 @@ class Consumable(Item):
     """Items that disappear when used."""
     def __init__(self, x, y, name, char, weight, value, stackable):
         Item.__init__(self, x, y, name, char, data.COLOURS['consumables'], 
-                      weight, value, True, stackable)
+                      weight, value, True, True, stackable)
 
     def use(self):
-        self.handler.player.remove_from_inv(self)
         self.handler.message_box.add_msg("You used a {}!".format(self.name),
                                          data.COLOURS['player_use_item_text'])
 
@@ -444,8 +451,8 @@ class HealthPotion(Potion):
         Potion.__init__(self, x, y, "Health Potion", 1, 5, 50)
 
     def use(self):
-        self.handler.inv_menu.remove_option(self)
         self.handler.player.heal_damage(self.potency)
         self.handler.message_box.add_msg("You regain {} HP!".format(self.potency),
                                          data.COLOURS['player_gain_hp_text'])
         Consumable.use(self)
+        return self
