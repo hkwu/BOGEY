@@ -443,8 +443,7 @@ class InventoryMenu(StandardMenu):
                     if item.usable:
                         self.item_use_bindings.append(item.use)
                     else:
-                        placeholder = lambda: None
-                        self.item_use_bindings.append(placeholder)
+                        self.item_use_bindings.append(lambda: None)
             else:
                 item_names.append(item.name)
                 item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
@@ -452,8 +451,7 @@ class InventoryMenu(StandardMenu):
                 if item.usable:
                     self.item_use_bindings.append(item.use)
                 else:
-                    placeholder = lambda: None
-                    self.item_use_bindings.append(placeholder)
+                    self.item_use_bindings.append(lambda: None)
 
         StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
                               True, item_names, "Your inventory is empty.", 
