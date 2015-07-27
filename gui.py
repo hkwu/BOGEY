@@ -429,11 +429,10 @@ class InventoryMenu(StandardMenu):
             'd': self.bind_drop,
             'e': self.bind_use_item
         }
-        self.item_use_bindings = {}
+        self.item_use_bindings = []
 
         item_names = []
         item_qty = []
-        index = 0
 
         for item in self.handler.player.inv:
             if not item.stackable:
@@ -441,14 +440,20 @@ class InventoryMenu(StandardMenu):
                     item_names.append(item.name)
                     item_qty.append("")
                     
-                    self.item_use_bindings[index] = item.use
-                    index += 1
+                    if item.usable:
+                        self.item_use_bindings.append(item.use)
+                    else:
+                        placeholder = lambda: None
+                        self.item_use_bindings.append(placeholder)
             else:
                 item_names.append(item.name)
                 item_qty.append("Qty: {}".format(self.handler.player.inv[item]))
 
-                self.item_use_bindings[index] = item.use
-                index += 1
+                if item.usable:
+                    self.item_use_bindings.append(item.use)
+                else:
+                    placeholder = lambda: None
+                    self.item_use_bindings.append(placeholder)
 
         StandardMenu.__init__(self, data.LEFT, "Inventory", data.CENTER, 40,
                               True, item_names, "Your inventory is empty.", 
@@ -461,14 +466,17 @@ class InventoryMenu(StandardMenu):
     def remove_option(self, item):
         """
         Takes an item in player's inventory and decreases its count in
-        the list of options, removing it altogether when appropriate.
-        Returns current count of the item in player's inventory.
+        the list of options, removing it and its item use binding, if 
+        applicable, altogether when the count reaches zero.
         """
         item_count = self.handler.player.inv[item]
 
         if item_count == 1 or not item.stackable:
             del self.options[self.selection_index]
             del self.tail_txt[self.selection_index]
+            
+            if item.usable:
+                self.item_use_bindings.pop(self.selection_index)
 
             if self.selection_index == self.max_selection and self.slice_head > 0:
                 self.slice_head -= 1
@@ -482,8 +490,6 @@ class InventoryMenu(StandardMenu):
         else:
             self.tail_txt[self.selection_index] = "Qty: {}".format(item_count - 1)
 
-        return item_count
-
     def bind_drop(self):
         """Binding for dropping an item."""
         if self.options:
@@ -495,13 +501,11 @@ class InventoryMenu(StandardMenu):
 
     def bind_use_item(self):
         """Wrapper for inventory items' use() method."""
-        if self.selection_index in self.item_use_bindings:
+        if self.selection_index < len(self.item_use_bindings):
             used = self.item_use_bindings[self.selection_index]()
 
             if used.consumable:
-                if self.remove_option(used) == 1:
-                    self.item_use_bindings.pop(self.selection_index)
-
+                self.remove_option(used)
                 self.handler.player.remove_from_inv(used)
 
 
