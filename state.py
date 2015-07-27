@@ -102,10 +102,6 @@ class StateHandler(object):
                                                     ('mobs', []), 
                                                     ('characters', [self.player])])
 
-        self.player.add_to_inv(entities.HealthPotion(self.player.x, self.player.y))
-        self.player.add_to_inv(entities.HealthPotion(self.player.x, self.player.y))
-        self.player.add_to_inv(entities.HealthPotion(self.player.x, self.player.y))
-
     def init_fov(self):
         """Initializes the FOV map."""
         self.fov_refresh = True
