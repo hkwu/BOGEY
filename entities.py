@@ -87,7 +87,7 @@ class LivingEntity(Entity):
         Places the first item on the ground below the entity
         into entity's inventory.
         """
-        for item in self.handler.map_objects['items']:
+        for item in reversed(self.handler.map_objects['items']):
             if item.x == self.x and item.y == self.y:
                 self.handler.map_objects['items'].remove(item)
                 self.add_to_inv(item)
