@@ -30,9 +30,9 @@ class StateHandler(object):
         if self.key.vk == libt.KEY_ENTER and self.key.lalt:
             libt.console_set_fullscreen(not libt.console_is_fullscreen())
         elif self.key.vk == libt.KEY_ESCAPE:
-            self.ingame_menu = gui.InGameMenu()
-            self.ingame_menu.draw()
-            status = self.ingame_menu.select()
+            menu = gui.InGameMenu()
+            menu.draw()
+            status = menu.select()
 
             if status == data.EXIT:
                 return status
@@ -53,9 +53,9 @@ class StateHandler(object):
                 if char == "g":
                     self.player.player_take()
                 elif char == "i":
-                    self.inv_menu = gui.InventoryMenu()
-                    self.inv_menu.draw()
-                    self.inv_menu.select()
+                    inv_menu = gui.InventoryMenu()
+                    inv_menu.draw()
+                    inv_menu.select()
                 elif char == ">":
                     for stairs in self.map_objects['stairs']:
                         if stairs.x == self.player.x and stairs.y == self.player.y:
