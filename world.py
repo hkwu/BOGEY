@@ -29,14 +29,22 @@ class Room(object):
         self.y2 = y + h
 
     def centre(self):
+        """Returns centre of the room."""
         centre_x = (self.x1 + self.x2) / 2
         centre_y = (self.y1 + self.y2) / 2
 
         return centre_x, centre_y
 
     def intersect(self, block):
+        """Returns true if room intersects with given block."""
         return (self.x1 <= block.x2 and self.x2 >= block.x1
                 and self.y1 <= block.y2 and self.y2 >= block.y1)
+
+    def rand_point(self):
+        """Returns random point within the room."""
+        rand_x = random.randrange(self.x1 + 1, self.x2)
+        rand_y = random.randrange(self.y1 + 1, self.y2)
+        return (rand_x, rand_y)
 
 
 class Map(object):
@@ -97,15 +105,14 @@ class Map(object):
         count = config.MAX_MOBS
 
         while count > 0:
-            entity_x = random.randrange(room.x1 + 1, room.x2)
-            entity_y = random.randrange(room.y1 + 1, room.y2)
-            mob = random.randrange(10)
+            entity_pos = room.rand_point()
+            mob = random.randrange(20)
 
-            if not self.is_solid(entity_x, entity_y):
+            if not self.is_solid(entity_pos[0], entity_pos[1]):
                 if mob == 0:
-                    self.handler.map_objects['mobs'].append(entities.Spider(entity_x, entity_y))
+                    self.handler.map_objects['mobs'].append(entities.Spider(entity_pos[0], entity_pos[1]))
                 elif mob == 1:
-                    self.handler.map_objects['mobs'].append(entities.Skeleton(entity_x, entity_y))
+                    self.handler.map_objects['mobs'].append(entities.Skeleton(entity_pos[0], entity_pos[1]))
 
             count -= 1
 
@@ -114,17 +121,16 @@ class Map(object):
         count = config.MAX_ITEMS
 
         while count > 0:
-            item_x = random.randrange(room.x1 + 1, room.x2)
-            item_y = random.randrange(room.y1 + 1, room.y2)
+            item_pos = room.rand_point()
             item = random.randrange(5)
 
-            if not self.is_solid(item_x, item_y):
+            if not self.is_solid(item_pos[0], item_pos[1]):
                 if item == 0:
-                    self.handler.map_objects['items'].append(entities.WoodenSword(item_x, item_y))
+                    self.handler.map_objects['items'].append(entities.WoodenSword(item_pos[0], item_pos[1]))
                 elif item == 1:
-                    self.handler.map_objects['items'].append(entities.StoneSword(item_x, item_y))
+                    self.handler.map_objects['items'].append(entities.StoneSword(item_pos[0], item_pos[1]))
                 elif item == 2:
-                    self.handler.map_objects['items'].append(entities.HealthPotion(item_x, item_y))
+                    self.handler.map_objects['items'].append(entities.HealthPotion(item_pos[0], item_pos[1]))
 
             count -= 1
 
@@ -195,3 +201,8 @@ class Map(object):
                 self.add_items(new)
                 self.connect_rooms(self.rooms[num_rooms - 2], 
                                    self.rooms[num_rooms - 1])
+
+        # Add stairs
+        stair_room = random.choice(self.rooms)
+        stair_pos = stair_room.rand_point()
+        self.handler.map_objects['stairs'] = [entities.Stairs(stair_pos[0], stair_pos[1])]

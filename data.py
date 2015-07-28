@@ -12,6 +12,7 @@ COLOURS = {
     'lit_wall': libt.Color(173, 173, 0),
     'ground': libt.light_grey,
     'lit_ground': libt.Color(21, 21, 21),
+    'stairs': libt.light_fuchsia,
     'player': libt.black,
     'mob': libt.red,
     'gui_bg': libt.black,

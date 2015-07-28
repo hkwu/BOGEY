@@ -21,14 +21,16 @@ class Entity(object):
     char: character representation of entity on world map
     colour: colour of entity on map
     solid: true if player can't walk through entity
+    visible_in_fog: true if player can see entity in fog of war
     """
-    def __init__(self, x, y, name, char, colour, solid=False):
+    def __init__(self, x, y, name, char, colour, solid=False, visible_in_fog=False):
         self.x = x
         self.y = y
         self.name = name
         self.char = char
         self.colour = colour
         self.solid = solid
+        self.visible_in_fog = visible_in_fog
 
     def move(self, dx, dy):
         """Moves the entity."""
@@ -38,7 +40,8 @@ class Entity(object):
 
     def draw(self):
         """Draws entity on console."""
-        if libt.map_is_in_fov(self.handler.fov_map, self.x, self.y):
+        if (libt.map_is_in_fov(self.handler.fov_map, self.x, self.y) or 
+            self.handler.world.map[self.x][self.y].seen and self.visible_in_fog):
             libt.console_set_default_foreground(self.handler.game_map, self.colour)
             libt.console_put_char(self.handler.game_map, self.x, self.y, 
                                   self.char, libt.BKGND_NONE)
@@ -456,3 +459,9 @@ class HealthPotion(Potion):
                                          data.COLOURS['player_gain_hp_text'])
         Consumable.use(self)
         return self
+
+
+class Stairs(Entity):
+    def __init__(self, x, y):
+        Entity.__init__(self, x, y, "Stairs", "<", 
+                        data.COLOURS['stairs'], False, True)

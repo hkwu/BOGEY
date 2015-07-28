@@ -30,6 +30,11 @@ class Border(GUIElement):
         y = self.handler.mouse.cy
         names = []
 
+        for stairs in self.handler.map_objects['stairs']:
+            if (stairs.x == x and stairs.y == y and 
+                self.handler.world.map[x][y].seen):
+                names.append(stairs.name)
+
         # Names of mobs
         for entity in self.handler.map_objects['mobs']:
             if (entity.x == x and entity.y == y and 

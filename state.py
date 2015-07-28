@@ -56,6 +56,10 @@ class StateHandler(object):
                     self.inv_menu = gui.InventoryMenu()
                     self.inv_menu.draw()
                     self.inv_menu.select()
+                elif char == ">":
+                    for stairs in self.map_objects['stairs']:
+                        if stairs.x == self.player.x and stairs.y == self.player.y:
+                            self.new_level()
 
                 return data.NO_MOVE
 
@@ -92,13 +96,35 @@ class StateHandler(object):
         self.init_fov()
         self.init_gui()
 
+    def new_level(self):
+        """Generates a new level after game has started."""
+        # Save old state then load it
+        current_messages = self.message_box.messages
+        player = self.player
+        self.new_game()
+        self.message_box.messages = current_messages
+
+        # Get new coordinates for player and assign correct references
+        player_x = self.player.x
+        player_y = self.player.y
+        self.player = player
+        self.player.x = player_x
+        self.player.y = player_y
+        self.map_objects['characters'][0] = self.player
+
+        # Heal player and add some messages
+        self.player.heal_damage(self.player.max_hp / 2)
+        self.message_box.add_msg("You advance up the stairs to greater adventure.")
+        self.message_box.add_msg("You rest up a bit.", data.COLOURS['player_gain_hp_text'])
+
     def init_game_objects(self):
         """Creates the object instances."""
         self.player = entities.Player(0, 0, "Player")
         self.world = world.Map()
 
         # Map objects, OrderedDict ensures proper draw order
-        self.map_objects = collections.OrderedDict([('items', []), 
+        self.map_objects = collections.OrderedDict([('stairs', []),
+                                                    ('items', []), 
                                                     ('mobs', []), 
                                                     ('characters', [self.player])])
 
