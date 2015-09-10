@@ -214,7 +214,7 @@ class Overlay(GUIElement):
             self.header_x = self.pad
             self.libt_align = libt.LEFT
         elif self.header_align == data.CENTER:
-            self.header_x = (self.width - 1)/2
+            self.header_x = self.width / 2
             self.libt_align = libt.CENTER
         else:
             self.header_x = self.width - 1 - self.pad
@@ -278,7 +278,7 @@ class SelectMenu(Overlay):
                     self.option_x = self.pad
                     self.libt_align = libt.LEFT
                 elif self.align == data.CENTER:
-                    self.option_x = (self.width - 1)/2
+                    self.option_x = self.width / 2
                     self.libt_align = libt.CENTER
                 else:
                     self.option_x = self.width - 1 - self.pad
@@ -353,6 +353,8 @@ class SelectMenu(Overlay):
                     elif status == data.REBUILD:
                         self.selection_index = 0
                         self.handler.play()
+                    elif status == data.CONFIRM_YES or status == data.CONFIRM_NO:
+                        self.status = status
             else:
                 for key in self.bindings:
                     if chr(choice.c) == key:
@@ -382,9 +384,9 @@ class StandardMenu(SelectMenu):
         if not y:
             y = (config.SCREEN_HEIGHT - 1)/2 - height/2
 
-        SelectMenu.__init__(self, x, y, align, header, header_align, content_width + 2, 
-                            max_options + 4, ingame, options, empty_options, 
-                            tail_txt, max_options, bindings, escape, 1)
+        SelectMenu.__init__(self, x, y, align, header, header_align, width, 
+                            height, ingame, options, empty_options, tail_txt, 
+                            max_options, bindings, escape, 1)
 
 
 class InGameMenu(StandardMenu):
@@ -595,6 +597,13 @@ class SaveMenu(SaveLoadMenu):
         """Saves game at player's current selection index."""
         if not self.save_handler.is_save(self.selection_index):
             self.tail_txt[self.selection_index] = "FILLED"
+        else:
+            confirm = ConfirmMenu("You will overwrite an existing save. OK?")
+            confirm.draw()
+            reply = confirm.select()
+
+            if reply != data.CONFIRM_YES:
+                return
 
         save_data = {
             'world': self.handler.world,
@@ -644,6 +653,33 @@ class LoadMenu(SaveLoadMenu):
             self.handler.init_fov()
 
             return data.REBUILD
+
+
+class ConfirmMenu(StandardMenu):
+    """Menu that prompts user to confirm their previous action."""
+    def __init__(self, confirm_msg):
+        options = ["Yes", "No"]
+        bindings = {
+            0: self.confirm_yes,
+            1: self.confirm_no
+        }
+
+        StandardMenu.__init__(self, data.LEFT, "Confirm Action", data.CENTER, 
+                              14, True, options, "", [], 2, bindings, 
+                              [libt.KEY_ESCAPE])
+
+    def background(self):
+        self.handler.render_all()
+
+    def confirm_yes(self):
+        """Indicates user confirmation of action."""
+        self.active = False
+        return data.CONFIRM_YES
+
+    def confirm_no(self):
+        """Indicates user reset of action."""
+        self.active = False
+        return data.CONFIRM_NO
 
 
 # Miscellaneous functions

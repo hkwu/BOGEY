@@ -38,6 +38,8 @@ EXIT = "exit"
 PLAY = "play"
 NO_MOVE = "no_move"
 REBUILD = "rebuild"
+CONFIRM_YES = "confirm_yes"
+CONFIRM_NO = "confirm_no"
 
 # Entity states
 HOLD = 0
